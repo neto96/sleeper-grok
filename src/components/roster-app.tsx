@@ -18,6 +18,7 @@ import {
 } from "@/lib/sleeper/constants";
 import { fetchLeagueRosters } from "@/lib/sleeper/fetch.functions";
 import { applyMyRoster, snapshotJson } from "@/lib/sleeper/format";
+import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 import type { LeagueSnapshot } from "@/lib/sleeper/types";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +41,11 @@ function readStoredMyRoster(): number {
   const raw = window.localStorage.getItem(MY_ROSTER_STORAGE_KEY);
   const parsed = raw ? Number(raw) : DEFAULT_MY_ROSTER_ID;
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MY_ROSTER_ID;
+}
+
+function teamAnalysis(snapshot: LeagueSnapshot, rosterId: number): AnalysisRecord | undefined {
+  const teams = snapshot.fantasyAnalysis?.teams as Record<string, AnalysisRecord> | undefined;
+  return teams?.[String(rosterId)];
 }
 
 function errorMessage(error: unknown): string {
@@ -142,13 +148,13 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
       <div className="mx-auto min-w-0 max-w-6xl px-4 pb-24 pt-8 sm:px-6 sm:pb-12">
         <header className="max-w-3xl">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-accent">
-            Sleeper · Snapshot v2
+            Sleeper · V3.3 analysis
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
             {snapshot?.leagueName ?? "Nuevo León Football League"}
           </h1>
           <p className="mt-3 max-w-xl text-pretty text-muted-foreground">
-            Live rosters, waiver order, free agents, matchups, and recent moves — exported as
+            Live rosters plus configuration-aware lineup, need, and waiver analysis — exported as
             Markdown you can attach to an LLM.
           </p>
         </header>
@@ -196,7 +202,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
             <Badge>{snapshot.waiverSystem}</Badge>
             <Badge>Season {snapshot.season}</Badge>
             <Badge>NFL week {snapshot.week}</Badge>
-            <Badge>{snapshot.teams.length} teams</Badge>
+            <Badge>{snapshot.rosterSlots.join(" · ")}</Badge>
             <span className="text-xs text-muted-foreground">
               Updated {formatFetchedAt(snapshot.fetchedAt)}
               {refreshing ? " · refreshing" : ""}
@@ -269,6 +275,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
                 team={myTeam}
                 rank={(snapshot.teams.findIndex((team) => team.rosterId === myTeam.rosterId) ?? 0) + 1}
                 mine
+                analysis={teamAnalysis(snapshot, myTeam.rosterId)}
               />
             ) : null}
             <div className="grid min-w-0 gap-4 md:grid-cols-2">
@@ -278,6 +285,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
                   team={team}
                   rank={(snapshot.teams.findIndex((row) => row.rosterId === team.rosterId) ?? 0) + 1}
                   onSetMine={() => setMine(team.rosterId)}
+                  analysis={teamAnalysis(snapshot, team.rosterId)}
                 />
               ))}
             </div>

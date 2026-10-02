@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { RosterAnalysis } from "@/components/roster-analysis";
 import { Badge } from "@/components/ui/badge";
 import { SLEEPER_AVATAR } from "@/lib/sleeper/constants";
 import { formatPoints, formatRecord, initials } from "@/lib/sleeper/format";
+import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 import type { PlayerSlot, TeamRoster } from "@/lib/sleeper/types";
 import { cn } from "@/lib/utils";
 
@@ -49,11 +51,13 @@ export function RosterCard({
   team,
   rank,
   mine,
+  analysis,
   onSetMine,
 }: {
   team: TeamRoster;
   rank: number;
   mine?: boolean;
+  analysis?: AnalysisRecord;
   onSetMine?: () => void;
 }) {
   const [open, setOpen] = useState(Boolean(mine));
@@ -134,6 +138,8 @@ export function RosterCard({
           <ExtraList label="Taxi" players={team.taxi} />
         </>
       ) : null}
+
+      {analysis ? <RosterAnalysis team={analysis} open={open} /> : null}
 
       {!mine && onSetMine ? (
         <button

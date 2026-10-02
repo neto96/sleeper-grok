@@ -1,12 +1,5 @@
 import { DEFAULT_MY_ROSTER_ID, FANTASY_POSITIONS, SLEEPER_API, type FantasyPosition } from "./constants";
-import {
-  buildMarkdown,
-  jsonFilename,
-  markdownFilename,
-  playerDisplayName,
-  scoringLabel,
-  sleeperPoints,
-} from "./format";
+import { buildAnalysisBundle, buildMarkdown, jsonFilename, markdownFilename, playerDisplayName, scoringLabel, sleeperPoints } from "./format";
 import type {
   LeagueSnapshot,
   LeagueTransaction,
@@ -173,6 +166,7 @@ function toSlot(
     injuryStatus: player?.injury_status ?? null,
     status: player?.status ?? null,
     number: player?.number ?? null,
+    searchRank: typeof player?.search_rank === "number" ? player.search_rank : null,
   };
 }
 
@@ -407,9 +401,19 @@ export async function loadLeagueSnapshot(
     "Waiver/free-agent players are derived from players not currently rostered.",
     "Inactive and invalid database entries are filtered from the primary waiver pool.",
     "Points use Sleeper's fpts + fpts_decimal / 100 (not the decimal field alone).",
+    "Fantasy analysis is the V3.3 configuration-driven model. snapshot_version stays 3.2 for compatibility.",
+    "Meaningful players are elite, strong, or useful (search rank 1-250). K, DEF, and IDP are outside the offensive optimizer.",
+    "Waiver analysis ranks QB, RB, WR, and TE only, using configuration-aware team need and league scarcity.",
   ];
 
   const fetchedAt = new Date().toISOString();
+  const analysis = buildAnalysisBundle(
+    teams,
+    rosters.map((roster) => roster.roster_id),
+    league.roster_positions ?? [],
+    waiverPlayers,
+    myRosterId,
+  );
   const base = {
     fetchedAt,
     leagueId: league.league_id || id,
@@ -433,6 +437,7 @@ export async function loadLeagueSnapshot(
     transactions,
     matchups,
     notes,
+    ...analysis,
   };
 
   return {

@@ -1,5 +1,12 @@
 import { FANTASY_POSITIONS } from "./constants";
-import type { LeagueSnapshot, PlayerSlot, TeamRoster } from "./types";
+import {
+  SNAPSHOT_VERSION,
+  buildFantasyAnalysis,
+  buildWaiverAnalysis,
+  parseRosterConfiguration,
+  type AnalysisRecord,
+} from "./analysis/engine";
+import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types";
 
 export function sleeperPoints(whole?: number | null, decimal?: number | null): number {
   return (whole ?? 0) + (decimal ?? 0) / 100;
@@ -71,6 +78,156 @@ function playerLine(player: PlayerSlot): string {
   return `- ${player.slot} — ${player.name}${pos}${team}${injury}`;
 }
 
+function analysisPlayer(player: PlayerSlot): AnalysisRecord {
+  return {
+    player_id: player.playerId,
+    name: player.name,
+    position: player.position,
+    team: player.nflTeam,
+    status: player.status,
+    injury_status: player.injuryStatus,
+    search_rank: player.searchRank,
+  };
+}
+
+export const WAIVER_ANALYSIS_EXPORT_LIMIT = 40;
+
+export function presentWaiverAnalysis(
+  fantasyAnalysis: AnalysisRecord,
+  waiverPool: AnalysisRecord[],
+  myRosterId: number,
+): AnalysisRecord {
+  const full = buildWaiverAnalysis(waiverPool, fantasyAnalysis, myRosterId);
+  const candidates = Array.isArray(full.candidates) ? full.candidates.slice(0, WAIVER_ANALYSIS_EXPORT_LIMIT) : [];
+  return { ...full, candidates };
+}
+
+export function buildAnalysisBundle(
+  teams: TeamRoster[],
+  rosterOrder: number[],
+  rosterPositions: string[],
+  waiverPlayers: WaiverPlayer[],
+  myRosterId: number,
+) {
+  const byId = new Map(teams.map((team) => [team.rosterId, team]));
+  const rosterData: Record<string, AnalysisRecord> = {};
+  for (const rosterId of rosterOrder) {
+    const team = byId.get(rosterId);
+    if (!team) continue;
+    const players = [...team.starters, ...team.bench, ...team.reserve, ...team.taxi];
+    rosterData[String(rosterId)] = {
+      team_name: team.teamName,
+      owner: team.ownerName,
+      players: players.map(analysisPlayer),
+      starters: team.starters.map((player) => ({ player_id: player.playerId })),
+      reserve: team.reserve.map((player) => ({ player_id: player.playerId })),
+      taxi: team.taxi.map((player) => ({ player_id: player.playerId })),
+    };
+  }
+  const fantasyAnalysis = buildFantasyAnalysis(rosterData, parseRosterConfiguration(rosterPositions));
+  const analysisWaiverPool = waiverPlayers
+    .filter((player) => player.position === "QB" || player.position === "RB" || player.position === "WR" || player.position === "TE")
+    .map((player) => ({
+      player_id: player.playerId,
+      name: player.name,
+      position: player.position,
+      team: player.nflTeam,
+      status: player.status,
+      injury_status: player.injuryStatus,
+      search_rank: player.searchRank,
+    }));
+  return {
+    snapshotVersion: SNAPSHOT_VERSION,
+    fantasyAnalysis,
+    waiverAnalysis: presentWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId),
+    analysisWaiverPool,
+  };
+}
+
+function teamAnalysis(snapshot: SnapshotContent, rosterId: number): AnalysisRecord | undefined {
+  const teams = snapshot.fantasyAnalysis?.teams as Record<string, AnalysisRecord> | undefined;
+  return teams?.[String(rosterId)];
+}
+
+function analysisMarkdown(snapshot: SnapshotContent): string[] {
+  const analysis = snapshot.fantasyAnalysis;
+  if (!analysis) return [];
+  const lines: string[] = ["", "## Fantasy Analysis", ""];
+  lines.push("Configuration-aware V3.3 analysis. `snapshot_version` remains `3.2`.");
+  lines.push("");
+  const requirements = analysis.lineup_requirements as Record<string, number> | undefined;
+  if (requirements) {
+    const slots = Object.entries(requirements)
+      .map(([slot, count]) => `${count} ${slot}`)
+      .join(", ");
+    lines.push(`- Lineup requirements: ${slots}`);
+  }
+  const flex = analysis.flex_slot_requirements as Record<string, { count?: number; eligible_positions?: string[] }> | undefined;
+  if (flex && Object.keys(flex).length > 0) {
+    for (const [code, slot] of Object.entries(flex)) {
+      lines.push(`- ${code}: ${slot.count} slot(s) for ${(slot.eligible_positions ?? []).join("/")}`);
+    }
+  }
+  const scarcity = analysis.league_position_scarcity as Record<string, AnalysisRecord> | undefined;
+  if (scarcity) {
+    const text = ["QB", "RB", "WR", "TE"]
+      .filter((position) => scarcity[position])
+      .map((position) => `${position} ${scarcity[position]?.scarcity}`)
+      .join(", ");
+    lines.push(`- League scarcity: ${text}`);
+  }
+  lines.push("");
+  const mine = teamAnalysis(snapshot, snapshot.myRosterId);
+  if (!mine) {
+    lines.push("- Analysis for the selected team was not available.");
+    return lines;
+  }
+  lines.push(`### ${md(String(mine.team_name || "My team"))}`);
+  lines.push("");
+  const lineup = (mine.optimal_lineup ?? {}) as Record<string, AnalysisRecord[]>;
+  lines.push("**Optimal lineup**");
+  for (const [slot, players] of Object.entries(lineup)) {
+    if (!players?.length) continue;
+    lines.push(`- ${slot}: ${players.map((player) => md(String(player.name || player.player_id))).join(", ")}`);
+  }
+  lines.push("");
+  lines.push("**Position need**");
+  const need = (mine.position_need ?? {}) as Record<string, AnalysisRecord>;
+  for (const position of ["QB", "RB", "WR", "TE"]) {
+    const row = need[position];
+    if (!row) continue;
+    lines.push(`- ${position}: **${row.need}** — ${md(String(row.reason ?? ""))}`);
+  }
+  lines.push("");
+  lines.push("**Lineup strength / starting depth**");
+  const strength = (mine.lineup_strength ?? {}) as Record<string, AnalysisRecord>;
+  const depth = (mine.starting_depth ?? {}) as Record<string, AnalysisRecord>;
+  for (const position of ["QB", "RB", "WR", "TE"]) {
+    const rating = strength[position]?.rating;
+    const label = depth[position]?.starting_depth;
+    if (!rating && !label) continue;
+    lines.push(`- ${position}: strength ${rating}, depth ${label}`);
+  }
+  const protect = ((mine.player_protection ?? []) as AnalysisRecord[]).filter((player) => player.protection === "protect");
+  if (protect.length) {
+    lines.push("");
+    lines.push("**Protect**");
+    for (const player of protect.slice(0, 8)) {
+      lines.push(`- ${md(String(player.name))} (${player.position}, ${player.fantasy_value_tier}) — ${md(String(player.reason ?? ""))}`);
+    }
+  }
+  const surplus = ((mine.roster_surplus ?? []) as AnalysisRecord[]).filter((player) => player.surplus_type === "surplus");
+  if (surplus.length) {
+    lines.push("");
+    lines.push("**Surplus**");
+    for (const player of surplus.slice(0, 8)) {
+      lines.push(`- ${md(String(player.name))} (${player.position}, ${player.fantasy_value_tier})`);
+    }
+  }
+  lines.push("");
+  return lines;
+}
+
 function playerList(label: string, players: PlayerSlot[]) {
   const lines = ["", label];
   if (players.length === 0) {
@@ -120,6 +277,7 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
     lines.push(...playerList("### Bench", mine.bench));
     if (mine.reserve.length) lines.push(...playerList("### IR / Reserve", mine.reserve));
     if (mine.taxi.length) lines.push(...playerList("### Taxi", mine.taxi));
+    lines.push(...analysisMarkdown(snapshot));
     lines.push("");
   } else {
     lines.push("- My team was not found for the selected roster ID.");
@@ -188,6 +346,20 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
 
   lines.push("## Available Waiver / Free-Agent Players");
   lines.push("");
+  const waiver = snapshot.waiverAnalysis;
+  const candidates = Array.isArray(waiver?.candidates) ? (waiver.candidates as AnalysisRecord[]) : [];
+  if (waiver?.available && candidates.length > 0) {
+    lines.push(`### Suggested adds for ${md(String(waiver.team ?? "my team"))}`);
+    lines.push("");
+    lines.push("_QB/RB/WR/TE only. Ranked by the V3.3 waiver score (search rank + team need + league scarcity)._");
+    lines.push("");
+    for (const player of candidates.slice(0, 20)) {
+      lines.push(
+        `- **${md(String(player.name))}** (${player.position}${player.team ? `, ${player.team}` : ""}) — score ${player.waiver_value_score}, need ${player.team_need}, scarcity ${player.league_scarcity}`,
+      );
+    }
+    lines.push("");
+  }
   lines.push(
     "_Primary waiver pool only. Inactive and invalid database entries are filtered out._",
   );
@@ -241,13 +413,22 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
 }
 
 export function applyMyRoster(snapshot: LeagueSnapshot, myRosterId: number): LeagueSnapshot {
-  const next = { ...snapshot, myRosterId };
+  const next = {
+    ...snapshot,
+    myRosterId,
+    waiverAnalysis: presentWaiverAnalysis(snapshot.fantasyAnalysis, snapshot.analysisWaiverPool ?? [], myRosterId),
+  };
   return { ...next, markdown: buildMarkdown(next) };
 }
 
 export function snapshotJson(snapshot: LeagueSnapshot) {
-  const { markdown: _markdown, ...rest } = snapshot;
-  return rest;
+  const { markdown: _markdown, analysisWaiverPool: _pool, snapshotVersion, fantasyAnalysis, waiverAnalysis, ...rest } = snapshot;
+  return {
+    ...rest,
+    snapshot_version: snapshotVersion,
+    fantasy_analysis: fantasyAnalysis,
+    waiver_analysis: waiverAnalysis,
+  };
 }
 
 export function initials(name: string): string {

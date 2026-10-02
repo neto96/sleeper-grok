@@ -1,3 +1,5 @@
+import type { AnalysisRecord } from "./analysis/engine";
+
 export type PlayerSlot = {
   playerId: string;
   name: string;
@@ -7,6 +9,7 @@ export type PlayerSlot = {
   injuryStatus: string | null;
   status: string | null;
   number: number | null;
+  searchRank: number | null;
 };
 
 export type TeamRoster = {
@@ -88,6 +91,11 @@ export type LeagueSnapshot = {
   transactions: LeagueTransaction[];
   matchups: WeekMatchup[];
   notes: string[];
+  snapshotVersion: "3.2";
+  fantasyAnalysis: AnalysisRecord;
+  waiverAnalysis: AnalysisRecord;
+  /** Offensive free agents used to rescore waivers when the selected team changes. Omitted from the JSON download. */
+  analysisWaiverPool: AnalysisRecord[];
   markdown: string;
   filename: string;
   jsonFilename: string;
