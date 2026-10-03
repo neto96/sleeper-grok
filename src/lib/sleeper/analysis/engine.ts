@@ -608,6 +608,50 @@ export function classifyPositionNeed(
   return { need: "moderate", reason: `${position} depth is around the league median.`, ...base };
 }
 
+function classifyUsablePositionNeed(
+  position: string,
+  usableSummary: AnalysisRecord,
+  leagueMedians: { usable_bodies: number; usable_meaningful: number },
+  configuredSlots: SlotInstance[],
+): AnalysisRecord {
+  const directRequired = getPositionSlotRequirements(position, configuredSlots).direct_required;
+  const usableBodies = Number(usableSummary.usable ?? 0);
+  const usableMeaningful = Number(usableSummary.usable_meaningful ?? 0);
+  const bodiesDifference = usableBodies - leagueMedians.usable_bodies;
+  const meaningfulDifference = usableMeaningful - leagueMedians.usable_meaningful;
+
+  let need: string;
+  let reason: string;
+  if (usableBodies < directRequired) {
+    need = "critical";
+    reason = `Only ${usableBodies} currently usable ${position} player(s) for ${directRequired} required direct slot(s).`;
+  } else if (usableMeaningful <= directRequired) {
+    need = "thin";
+    reason = `Currently usable meaningful ${position} depth does not exceed direct demand.`;
+  } else if (usableMeaningful < leagueMedians.usable_meaningful) {
+    need = "moderate";
+    reason = `Currently usable meaningful ${position} depth is below the league median.`;
+  } else if (usableBodies > leagueMedians.usable_bodies && usableMeaningful > leagueMedians.usable_meaningful) {
+    need = "low";
+    reason = `Currently usable ${position} depth and meaningful depth are above the league medians.`;
+  } else {
+    need = "moderate";
+    reason = `Currently usable ${position} depth is around the league median.`;
+  }
+
+  return {
+    need,
+    reason,
+    direct_required: directRequired,
+    usable_bodies: usableBodies,
+    usable_meaningful: usableMeaningful,
+    usable_bodies_difference: bodiesDifference,
+    usable_meaningful_difference: meaningfulDifference,
+    league_median_usable_bodies: leagueMedians.usable_bodies,
+    league_median_usable_meaningful: leagueMedians.usable_meaningful,
+  };
+}
+
 function playerScore(player: AnalysisRecord): number {
   if (player.status === "Inactive") return -1;
   if (player.injury_status === "IR") return -1;
@@ -1310,12 +1354,24 @@ export function buildFantasyAnalysis(
     Object.fromEntries(OFFENSIVE_POSITIONS.filter((position) => position in league).map((position) => [position, league[position]])),
   );
 
+  const usableLeagueMedians: Record<string, { usable_bodies: number; usable_meaningful: number }> = {};
+  for (const position of OFFENSIVE_POSITIONS) {
+    const summaries = Object.values(teams).map((team) =>
+      (((team.availability as AnalysisRecord).usable_summary as AnalysisRecord)[position] ?? {}) as AnalysisRecord,
+    );
+    const usableBodies = summaries.map((summary) => Number(summary.usable ?? 0)).sort((a, b) => a - b);
+    const usableMeaningful = summaries.map((summary) => Number(summary.usable_meaningful ?? 0)).sort((a, b) => a - b);
+    usableLeagueMedians[position] = {
+      usable_bodies: usableBodies.length > 0 ? median(usableBodies) : 0,
+      usable_meaningful: usableMeaningful.length > 0 ? median(usableMeaningful) : 0,
+    };
+  }
   for (const team of Object.values(teams)) {
     const optimalLineup = calculateOptimalLineup(team.positions as Record<string, AnalysisRecord[]>, rosterConfiguration);
     team.optimal_lineup = optimalLineup;
     const availability = team.availability as AnalysisRecord;
-    const usableByPlayerId = new Map(
-      ((availability.players ?? []) as AnalysisRecord[]).map((player) => [
+    const usableByPlayerId = new Map<string, boolean>(
+      ((availability.players ?? []) as AnalysisRecord[]).map((player): [string, boolean] => [
         String(player.player_id),
         player.currently_usable === true,
       ]),
@@ -1331,6 +1387,44 @@ export function buildFantasyAnalysis(
     );
     availability.usable_lineup = calculateOptimalLineup(usablePositions, rosterConfiguration);
     team.availability = availability;
+    const usablePositionSummary: Record<string, AnalysisRecord> = {};
+    for (const position of OFFENSIVE_POSITIONS) {
+      const candidates = usablePositions[position] ?? [];
+      usablePositionSummary[position] = {
+        starters: candidates.filter((player) => player.roster_status === "starter").length,
+        meaningful_players: candidates.filter((player) =>
+          MEANINGFUL_TIERS.has(String(player.fantasy_value_tier)),
+        ).length,
+      };
+    }
+    const usableStartingDepth: AnalysisRecord = {};
+    const usablePositionNeed: AnalysisRecord = {};
+    for (const position of OFFENSIVE_POSITIONS) {
+      const usableSummary = ((availability.usable_summary as AnalysisRecord)[position] ?? {}) as AnalysisRecord;
+      usableStartingDepth[position] = classifyStartingDepth(
+        position,
+        usablePositionSummary[position] ?? {},
+        usablePositions,
+        availability.usable_lineup as Record<string, AnalysisRecord[]>,
+        configuredSlots,
+      );
+      usablePositionNeed[position] = classifyUsablePositionNeed(
+        position,
+        usableSummary,
+        usableLeagueMedians[position]!,
+        configuredSlots,
+      );
+    }
+    availability.usable_starting_depth = usableStartingDepth;
+    availability.usable_position_need = usablePositionNeed;
+    availability.usable_lineup_strength = calculateLineupStrength(
+      {
+        positions: usablePositions,
+        optimal_lineup: availability.usable_lineup as Record<string, AnalysisRecord[]>,
+        starting_depth: usableStartingDepth,
+      },
+      rosterConfiguration,
+    );
     const positionNeed: AnalysisRecord = {};
     for (const position of OFFENSIVE_POSITIONS) {
       positionNeed[position] = classifyPositionNeed(
