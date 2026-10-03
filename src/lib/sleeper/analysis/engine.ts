@@ -1313,6 +1313,24 @@ export function buildFantasyAnalysis(
   for (const team of Object.values(teams)) {
     const optimalLineup = calculateOptimalLineup(team.positions as Record<string, AnalysisRecord[]>, rosterConfiguration);
     team.optimal_lineup = optimalLineup;
+    const availability = team.availability as AnalysisRecord;
+    const usableByPlayerId = new Map(
+      ((availability.players ?? []) as AnalysisRecord[]).map((player) => [
+        String(player.player_id),
+        player.currently_usable === true,
+      ]),
+    );
+    const structuralPositions = team.positions as Record<string, AnalysisRecord[]>;
+    const usablePositions: Record<string, AnalysisRecord[]> = Object.fromEntries(
+      OFFENSIVE_POSITIONS.map((position) => [
+        position,
+        (structuralPositions[position] ?? []).filter((player) =>
+          usableByPlayerId.get(String(player.player_id)) === true,
+        ),
+      ]),
+    );
+    availability.usable_lineup = calculateOptimalLineup(usablePositions, rosterConfiguration);
+    team.availability = availability;
     const positionNeed: AnalysisRecord = {};
     for (const position of OFFENSIVE_POSITIONS) {
       positionNeed[position] = classifyPositionNeed(
