@@ -10,6 +10,8 @@
  * is not ported.
  */
 
+import { assessAvailability } from "./availability.ts";
+
 export const SNAPSHOT_VERSION = "3.2" as const;
 
 const DIRECT_POSITIONS = ["QB", "RB", "WR", "TE", "K", "DEF"] as const;
@@ -1153,6 +1155,14 @@ export function buildFantasyAnalysis(
     const starterIds = new Set(((roster.starters ?? []) as AnalysisRecord[]).map((player) => String(player.player_id)));
     const reserveIds = new Set(((roster.reserve ?? []) as AnalysisRecord[]).map((player) => String(player.player_id)));
     const taxiIds = new Set(((roster.taxi ?? []) as AnalysisRecord[]).map((player) => String(player.player_id)));
+    const availabilityPlayers: AnalysisRecord[] = [];
+    const availabilityPlayerIds = new Set<string>();
+    const usableSummary: AnalysisRecord = Object.fromEntries(
+      OFFENSIVE_POSITIONS.map((position) => [
+        position,
+        { rostered: 0, meaningful: 0, usable: 0, usable_meaningful: 0, unavailable_meaningful: 0 },
+      ]),
+    );
 
     for (const player of (roster.players ?? []) as AnalysisRecord[]) {
       const playerId = String(player.player_id);
@@ -1176,6 +1186,38 @@ export function buildFantasyAnalysis(
         fantasy_value_tier: valueTier,
         importance_score: fantasyImportanceScore({ fantasy_value_tier: valueTier, roster_status: rosterStatus }),
       });
+      if (!availabilityPlayerIds.has(playerId)) {
+        availabilityPlayerIds.add(playerId);
+        const assessment = assessAvailability({
+          position,
+          status: player.status ?? null,
+          injury_status: player.injury_status ?? null,
+          roster_status: rosterStatus,
+        });
+        availabilityPlayers.push({
+          player_id: playerId,
+          name: player.name ?? null,
+          position,
+          team: player.team ?? null,
+          status: player.status ?? null,
+          injury_status: player.injury_status ?? null,
+          roster_status: rosterStatus,
+          ...assessment,
+        });
+        if ((OFFENSIVE_POSITIONS as readonly string[]).includes(position)) {
+          const summary = usableSummary[position] as AnalysisRecord;
+          const meaningful = MEANINGFUL_TIERS.has(valueTier);
+          summary.rostered = Number(summary.rostered) + 1;
+          if (meaningful) summary.meaningful = Number(summary.meaningful) + 1;
+          if (assessment.currently_usable) summary.usable = Number(summary.usable) + 1;
+          if (meaningful && assessment.currently_usable) {
+            summary.usable_meaningful = Number(summary.usable_meaningful) + 1;
+          }
+          if (meaningful && assessment.availability === "unavailable") {
+            summary.unavailable_meaningful = Number(summary.unavailable_meaningful) + 1;
+          }
+        }
+      }
     }
 
     const positionSummary: AnalysisRecord = {};
@@ -1255,6 +1297,7 @@ export function buildFantasyAnalysis(
       team_name: cleanName(roster.team_name),
       owner: cleanName(roster.owner),
       positions,
+      availability: { players: availabilityPlayers, usable_summary: usableSummary },
       position_summary: positionSummary,
       lineup_coverage: lineupCoverage,
       position_need: {},
