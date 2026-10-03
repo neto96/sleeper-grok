@@ -887,6 +887,14 @@ export function calculateLineupStrength(team: AnalysisRecord, rosterConfiguratio
 export function calculateRosterSurplus(team: AnalysisRecord, rosterConfiguration: AnalysisRecord): AnalysisRecord[] {
   const positions = (team.positions ?? {}) as Record<string, AnalysisRecord[]>;
   const optimal = (team.optimal_lineup ?? {}) as Record<string, AnalysisRecord[]>;
+  return calculateSurplusForCandidates(positions, optimal, rosterConfiguration);
+}
+
+function calculateSurplusForCandidates(
+  positions: Record<string, AnalysisRecord[]>,
+  optimal: Record<string, AnalysisRecord[]>,
+  rosterConfiguration: AnalysisRecord,
+): AnalysisRecord[] {
   const lineupIds = new Set<unknown>();
   for (const players of Object.values(optimal)) {
     for (const player of players) lineupIds.add(player.player_id);
@@ -1393,6 +1401,11 @@ export function buildFantasyAnalysis(
       ]),
     );
     availability.usable_lineup = calculateOptimalLineup(usablePositions, rosterConfiguration);
+    availability.actionable_surplus = calculateSurplusForCandidates(
+      usablePositions,
+      availability.usable_lineup as Record<string, AnalysisRecord[]>,
+      rosterConfiguration,
+    );
     team.availability = availability;
     const usablePositionSummary: Record<string, AnalysisRecord> = {};
     for (const position of OFFENSIVE_POSITIONS) {
