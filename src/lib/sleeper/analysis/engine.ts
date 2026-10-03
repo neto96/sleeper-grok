@@ -959,6 +959,13 @@ function lineupScore(lineup: Record<string, AnalysisRecord[]>): number {
 
 export function calculateRosterReplacementCost(team: AnalysisRecord, rosterConfiguration: AnalysisRecord): AnalysisRecord[] {
   const positions = (team.positions ?? {}) as Record<string, AnalysisRecord[]>;
+  return calculateReplacementCostForCandidates(positions, rosterConfiguration);
+}
+
+function calculateReplacementCostForCandidates(
+  positions: Record<string, AnalysisRecord[]>,
+  rosterConfiguration: AnalysisRecord,
+): AnalysisRecord[] {
   const baseline = calculateOptimalLineup(positions, rosterConfiguration);
   const originalScore = lineupScore(baseline);
   const baselineAssignments = new Map<unknown, { lineup_position: string; player: AnalysisRecord }>();
@@ -1425,6 +1432,7 @@ export function buildFantasyAnalysis(
       },
       rosterConfiguration,
     );
+    availability.usable_replacement_cost = calculateReplacementCostForCandidates(usablePositions, rosterConfiguration);
     const positionNeed: AnalysisRecord = {};
     for (const position of OFFENSIVE_POSITIONS) {
       positionNeed[position] = classifyPositionNeed(
