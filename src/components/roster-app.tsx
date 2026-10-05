@@ -148,7 +148,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
       <div className="mx-auto min-w-0 max-w-6xl px-4 pb-24 pt-8 sm:px-6 sm:pb-12">
         <header className="max-w-3xl">
           <p className="text-xs font-medium uppercase tracking-[0.18em] text-accent">
-            Sleeper · V3.3 analysis
+            Sleeper · V3.4 analysis
           </p>
           <h1 className="mt-2 font-display text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
             {snapshot?.leagueName ?? "Nuevo León Football League"}

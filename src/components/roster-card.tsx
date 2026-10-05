@@ -8,7 +8,42 @@ import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 import type { PlayerSlot, TeamRoster } from "@/lib/sleeper/types";
 import { cn } from "@/lib/utils";
 
-function PlayerRow({ player, dim }: { player: PlayerSlot; dim?: boolean }) {
+function availabilityByPlayerId(analysis?: AnalysisRecord): Map<string, AnalysisRecord> {
+  const availability = analysis?.availability;
+  if (!availability || typeof availability !== "object" || Array.isArray(availability)) return new Map();
+  const players = availability.players;
+  if (!Array.isArray(players)) return new Map();
+
+  const byId = new Map<string, AnalysisRecord>();
+  for (const player of players as AnalysisRecord[]) {
+    if (player.player_id != null) byId.set(String(player.player_id), player);
+  }
+  return byId;
+}
+
+function availabilityLabel(assessment?: AnalysisRecord): string | null {
+  switch (assessment?.availability) {
+    case "unavailable":
+      return "Unavailable";
+    case "uncertain":
+      return "Questionable";
+    case "unknown":
+      return "Unknown";
+    default:
+      return null;
+  }
+}
+
+function PlayerRow({
+  player,
+  dim,
+  assessment,
+}: {
+  player: PlayerSlot;
+  dim?: boolean;
+  assessment?: AnalysisRecord;
+}) {
+  const label = availabilityLabel(assessment);
   return (
     <li
       className={cn(
@@ -24,6 +59,22 @@ function PlayerRow({ player, dim }: { player: PlayerSlot; dim?: boolean }) {
             {player.injuryStatus}
           </Badge>
         ) : null}
+        {label ? (
+          <span
+            className={cn(
+              "ml-2 text-xs text-muted-foreground",
+              assessment?.availability === "unavailable" && "font-medium",
+              assessment?.availability === "uncertain" && "italic",
+            )}
+            aria-label={
+              label === "Questionable"
+                ? "Availability: questionable"
+                : "Availability: " + label.toLowerCase()
+            }
+          >
+            {label}
+          </span>
+        ) : null}
       </span>
       <span className="tabular-nums text-muted-foreground">
         {player.position}
@@ -33,14 +84,27 @@ function PlayerRow({ player, dim }: { player: PlayerSlot; dim?: boolean }) {
   );
 }
 
-function ExtraList({ label, players }: { label: string; players: PlayerSlot[] }) {
+function ExtraList({
+  label,
+  players,
+  availability,
+}: {
+  label: string;
+  players: PlayerSlot[];
+  availability: Map<string, AnalysisRecord>;
+}) {
   if (players.length === 0) return null;
   return (
     <div className="mt-3">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <ul className="mt-1 divide-y divide-border/80">
         {players.map((player) => (
-          <PlayerRow key={player.playerId} player={player} dim />
+          <PlayerRow
+            key={player.playerId}
+            player={player}
+            dim
+            assessment={availability.get(player.playerId)}
+          />
         ))}
       </ul>
     </div>
@@ -62,6 +126,7 @@ export function RosterCard({
 }) {
   const [open, setOpen] = useState(Boolean(mine));
   const avatar = team.avatar ? `${SLEEPER_AVATAR}/${team.avatar}` : null;
+  const playerAvailability = availabilityByPlayerId(analysis);
 
   return (
     <article
@@ -108,7 +173,11 @@ export function RosterCard({
 
       <ul className="mt-4 divide-y divide-border/80">
         {team.starters.map((player) => (
-          <PlayerRow key={`${player.slot}-${player.playerId}`} player={player} />
+          <PlayerRow
+            key={`${player.slot}-${player.playerId}`}
+            player={player}
+            assessment={playerAvailability.get(player.playerId)}
+          />
         ))}
       </ul>
 
@@ -127,15 +196,22 @@ export function RosterCard({
           {team.bench.length === 0 ? (
             <li className="py-2 text-sm text-muted-foreground">No bench players</li>
           ) : (
-            team.bench.map((player) => <PlayerRow key={player.playerId} player={player} dim />)
+            team.bench.map((player) => (
+              <PlayerRow
+                key={player.playerId}
+                player={player}
+                dim
+                assessment={playerAvailability.get(player.playerId)}
+              />
+            ))
           )}
         </ul>
       ) : null}
 
       {open ? (
         <>
-          <ExtraList label="IR / Reserve" players={team.reserve} />
-          <ExtraList label="Taxi" players={team.taxi} />
+          <ExtraList label="IR / Reserve" players={team.reserve} availability={playerAvailability} />
+          <ExtraList label="Taxi" players={team.taxi} availability={playerAvailability} />
         </>
       ) : null}
 
