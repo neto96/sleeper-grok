@@ -94,6 +94,7 @@ export type LeagueSnapshot = {
   snapshotVersion: "3.2";
   fantasyAnalysis: AnalysisRecord;
   waiverAnalysis: AnalysisRecord;
+  actionableWaiverAnalysis?: AnalysisRecord;
   /** Offensive free agents used to rescore waivers when the selected team changes. Omitted from the JSON download. */
   analysisWaiverPool: AnalysisRecord[];
   markdown: string;

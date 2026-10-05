@@ -1370,6 +1370,9 @@ export function buildFantasyAnalysis(
   );
 
   const usableLeagueMedians: Record<string, { usable_bodies: number; usable_meaningful: number }> = {};
+  const usableLeaguePositionRows: Record<string, AnalysisRecord[]> = Object.fromEntries(
+    OFFENSIVE_POSITIONS.map((position) => [position, []]),
+  );
   for (const position of OFFENSIVE_POSITIONS) {
     const summaries = Object.values(teams).map((team) =>
       (((team.availability as AnalysisRecord).usable_summary as AnalysisRecord)[position] ?? {}) as AnalysisRecord,
@@ -1400,6 +1403,13 @@ export function buildFantasyAnalysis(
         ),
       ]),
     );
+    for (const position of OFFENSIVE_POSITIONS) {
+      const candidates = usablePositions[position] ?? [];
+      usableLeaguePositionRows[position]!.push({
+        depth_score: candidates.reduce((sum, player) => sum + Number(player.importance_score ?? 0), 0),
+        meaningful_players: candidates.filter((player) => MEANINGFUL_TIERS.has(String(player.fantasy_value_tier))).length,
+      });
+    }
     availability.usable_lineup = calculateOptimalLineup(usablePositions, rosterConfiguration);
     availability.actionable_surplus = calculateSurplusForCandidates(
       usablePositions,
@@ -1473,6 +1483,23 @@ export function buildFantasyAnalysis(
     team.player_protection = calculatePlayerProtection(team);
   }
 
+  const usablePositionAnalysis: AnalysisRecord = {};
+  for (const position of OFFENSIVE_POSITIONS) {
+    const teamRows = usableLeaguePositionRows[position] ?? [];
+    if (teamRows.length === 0) continue;
+    const depthScores = teamRows.map((row) => Number(row.depth_score)).sort((a, b) => a - b);
+    const meaningfulCounts = teamRows.map((row) => Number(row.meaningful_players));
+    usablePositionAnalysis[position] = {
+      median_depth_score: median(depthScores),
+      average_depth_score: pythonRound(depthScores.reduce((sum, value) => sum + value, 0) / depthScores.length, 2),
+      average_meaningful_players: pythonRound(
+        meaningfulCounts.reduce((sum, value) => sum + value, 0) / meaningfulCounts.length,
+        2,
+      ),
+    };
+  }
+  analysis.league_usable_scarcity = classifyLeagueScarcity(usablePositionAnalysis);
+
   return analysis;
 }
 
@@ -1484,15 +1511,50 @@ export function buildWaiverAnalysis(
   const teams = fantasyAnalysis.teams as Record<string, AnalysisRecord>;
   const myTeam = teams[String(myRosterId)];
   if (!myTeam) return { available: false, candidates: [] };
-  const leagueScarcity = (fantasyAnalysis.league_position_scarcity ?? {}) as Record<string, AnalysisRecord>;
+  return scoreWaiverCandidates(
+    waiverPool.map((player) => ({ player })),
+    myTeam,
+    (myTeam.position_need ?? {}) as Record<string, AnalysisRecord>,
+    (fantasyAnalysis.league_position_scarcity ?? {}) as Record<string, AnalysisRecord>,
+  );
+}
+
+export function buildActionableWaiverAnalysis(
+  waiverPool: AnalysisRecord[],
+  fantasyAnalysis: AnalysisRecord,
+  myRosterId: number | string,
+): AnalysisRecord {
+  const teams = fantasyAnalysis.teams as Record<string, AnalysisRecord>;
+  const myTeam = teams[String(myRosterId)];
+  if (!myTeam) return { available: false, candidates: [] };
+  const usableCandidates: { player: AnalysisRecord; assessment: ReturnType<typeof assessAvailability> }[] = [];
+  for (const player of waiverPool) {
+    const assessment = assessAvailability(player);
+    if (assessment.currently_usable) usableCandidates.push({ player, assessment });
+  }
+  const availability = (myTeam.availability ?? {}) as AnalysisRecord;
+  return scoreWaiverCandidates(
+    usableCandidates,
+    myTeam,
+    (availability.usable_position_need ?? {}) as Record<string, AnalysisRecord>,
+    (fantasyAnalysis.league_usable_scarcity ?? {}) as Record<string, AnalysisRecord>,
+  );
+}
+
+function scoreWaiverCandidates(
+  waiverPool: { player: AnalysisRecord; assessment?: ReturnType<typeof assessAvailability> }[],
+  myTeam: AnalysisRecord,
+  teamNeed: Record<string, AnalysisRecord>,
+  leagueScarcity: Record<string, AnalysisRecord>,
+): AnalysisRecord {
   const offensive = new Set<string>(OFFENSIVE_POSITIONS);
   const candidates: AnalysisRecord[] = [];
-  for (const player of waiverPool) {
+  for (const { player, assessment } of waiverPool) {
     const position = String(player.position ?? "");
     if (!offensive.has(position)) continue;
-    const needLevel = String((((myTeam.position_need ?? {}) as AnalysisRecord)[position] as AnalysisRecord | undefined)?.need ?? "unknown");
+    const needLevel = String((teamNeed[position] as AnalysisRecord | undefined)?.need ?? "unknown");
     const scarcity = String((leagueScarcity[position]?.scarcity as string | undefined) ?? "unknown");
-    candidates.push({
+    const candidate: AnalysisRecord = {
       player_id: player.player_id,
       name: player.name,
       position,
@@ -1503,7 +1565,13 @@ export function buildWaiverAnalysis(
       team_need: needLevel,
       league_scarcity: scarcity,
       waiver_value_score: waiverValueScore(player, needLevel, scarcity),
-    });
+    };
+    if (assessment) {
+      candidate.availability = assessment.availability;
+      candidate.reason = assessment.reason;
+      candidate.currently_usable = assessment.currently_usable;
+    }
+    candidates.push(candidate);
   }
   candidates.sort((a, b) => {
     const score = Number(b.waiver_value_score) - Number(a.waiver_value_score);
