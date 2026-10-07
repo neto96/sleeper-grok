@@ -27,6 +27,9 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
   const structuralNeed = (mine?.position_need ?? {}) as Record<string, AnalysisRecord>;
   const availability = (mine?.availability ?? {}) as AnalysisRecord;
   const usableNeed = (availability.usable_position_need ?? {}) as Record<string, AnalysisRecord>;
+  const recommendations = Array.isArray((mine?.recommendations as AnalysisRecord | undefined)?.actions)
+    ? (((mine?.recommendations as AnalysisRecord).actions as AnalysisRecord[]))
+    : [];
   const actionable = snapshot.actionableWaiverAnalysis;
   const actionableCandidates = Array.isArray(actionable?.candidates)
     ? (actionable.candidates as AnalysisRecord[])
@@ -44,6 +47,23 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
             ? `Actionable adds for ${String(actionable.team)}. Recommendations use currently usable team need and usable league scarcity.`
             : "Select a roster that is in this league to score waiver adds."}
         </p>
+
+        <div className="mt-4">
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recommended Next Moves</h3>
+          {recommendations.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">No urgent lineup or bye-week moves identified.</p>
+          ) : (
+            <ul className="mt-1 space-y-1.5">
+              {recommendations.slice(0, 5).map((action, index) => (
+                <li key={`${action.position_or_slot}-${action.week}-${index}`} className="text-sm">
+                  <span className="mr-2 font-semibold">{String(action.urgency).replaceAll("_", " ").toUpperCase()}</span>
+                  <span className="font-medium">{String(action.title)}</span>
+                  <span className="ml-1 text-muted-foreground">{String(action.reason)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <div className="mt-4">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Your Team Need</h3>

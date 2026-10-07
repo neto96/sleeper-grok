@@ -9,6 +9,7 @@ import {
   type AnalysisRecord,
 } from "./analysis/engine.ts";
 import { addFutureReadiness, type FutureReadinessOptions } from "./analysis/future-readiness.ts";
+import { addRecommendations } from "./analysis/recommendations.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types";
 
 export function sleeperPoints(whole?: number | null, decimal?: number | null): number {
@@ -152,11 +153,14 @@ export function buildAnalysisBundle(
       injury_status: player.injuryStatus,
       search_rank: player.searchRank,
     }));
+  const waiverAnalysis = presentWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId);
+  const actionableWaiverAnalysis = presentActionableWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId);
+  addRecommendations(fantasyAnalysis, actionableWaiverAnalysis, myRosterId);
   return {
     snapshotVersion: SNAPSHOT_VERSION,
     fantasyAnalysis,
-    waiverAnalysis: presentWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId),
-    actionableWaiverAnalysis: presentActionableWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId),
+    waiverAnalysis,
+    actionableWaiverAnalysis,
     analysisWaiverPool,
   };
 }
@@ -208,6 +212,18 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
     return lines;
   }
   lines.push(`### ${md(String(mine.team_name || "My team"))}`);
+  lines.push("");
+  const recommendations = ((mine.recommendations ?? {}) as AnalysisRecord).actions as AnalysisRecord[] | undefined;
+  lines.push("#### Recommended Next Moves");
+  if (!recommendations || recommendations.length === 0) {
+    lines.push("- No urgent lineup or bye-week moves identified.");
+  } else {
+    for (const action of recommendations) {
+      const urgency = String(action.urgency ?? "watch").replaceAll("_", " ").toUpperCase();
+      const label = `${urgency}${action.position_or_slot ? ` — ${action.position_or_slot}` : ""}${action.week != null ? `, Week ${action.week}` : ""}`;
+      lines.push(`- **${label}:** ${md(String(action.title ?? "Review roster"))}. ${md(String(action.reason ?? ""))}`);
+    }
+  }
   lines.push("");
   const availability = (mine.availability ?? {}) as AnalysisRecord;
   const availabilityPlayers = (availability.players ?? []) as AnalysisRecord[];
@@ -527,15 +543,22 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
 }
 
 export function applyMyRoster(snapshot: LeagueSnapshot, myRosterId: number): LeagueSnapshot {
+  const teams = { ...((snapshot.fantasyAnalysis.teams ?? {}) as Record<string, AnalysisRecord>) };
+  for (const [rosterId, team] of Object.entries(teams)) teams[rosterId] = { ...team };
+  const fantasyAnalysis = { ...snapshot.fantasyAnalysis, teams };
+  const waiverAnalysis = presentWaiverAnalysis(fantasyAnalysis, snapshot.analysisWaiverPool ?? [], myRosterId);
+  const actionableWaiverAnalysis = presentActionableWaiverAnalysis(
+    fantasyAnalysis,
+    snapshot.analysisWaiverPool ?? [],
+    myRosterId,
+  );
+  addRecommendations(fantasyAnalysis, actionableWaiverAnalysis, myRosterId);
   const next = {
     ...snapshot,
     myRosterId,
-    waiverAnalysis: presentWaiverAnalysis(snapshot.fantasyAnalysis, snapshot.analysisWaiverPool ?? [], myRosterId),
-    actionableWaiverAnalysis: presentActionableWaiverAnalysis(
-      snapshot.fantasyAnalysis,
-      snapshot.analysisWaiverPool ?? [],
-      myRosterId,
-    ),
+    fantasyAnalysis,
+    waiverAnalysis,
+    actionableWaiverAnalysis,
   };
   return { ...next, markdown: buildMarkdown(next) };
 }

@@ -157,6 +157,26 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
     assert.match(text, /Josh Jacobs/);
   });
 
+  it("renders engine recommendations near the top of the fantasy analysis", () => {
+    const data = snapshot();
+    const teams = data.fantasyAnalysis.teams as Record<string, AnalysisRecord>;
+    teams["1"]!.recommendations = {
+      actions: [{
+        category: "bye_week",
+        urgency: "act_now",
+        position_or_slot: "TE",
+        week: 6,
+        title: "Add a TE for Week 6",
+        reason: "Sam LaPorta is unavailable and no usable replacement is rostered.",
+        related_player_ids: ["laporta"],
+      }],
+    };
+    const text = buildMarkdown(data);
+    const nextMoves = text.split("#### Recommended Next Moves")[1]?.split("#### Roster Availability")[0] ?? "";
+    assert.match(nextMoves, /ACT NOW — TE, Week 6/);
+    assert.match(nextMoves, /Sam LaPorta is unavailable/);
+  });
+
   it("prioritizes actionable waivers while retaining structural context and the raw pool", () => {
     const { text, snapshot: data } = markdown();
     const actionable = text.split("### Actionable Recommendations")[1]?.split("### Structural Context")[0] ?? "";

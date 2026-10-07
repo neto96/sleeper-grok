@@ -98,6 +98,12 @@ function replacementText(row: AnalysisRecord | undefined): string {
   return `${level} · ${replacement}`;
 }
 
+function urgencyVariant(value: unknown) {
+  if (value === "act_now") return "injury" as const;
+  if (value === "plan_ahead") return "accent" as const;
+  return "default" as const;
+}
+
 export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boolean }) {
   const availability = record(team.availability);
   const unavailable = records(availability.players).filter((player) => player.currently_usable === false);
@@ -115,6 +121,7 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
   );
   const structuralSurplus = records(team.roster_surplus).filter((player) => player.surplus_type === "surplus");
   const actionableSurplus = records(availability.actionable_surplus).filter((player) => player.surplus_type === "surplus");
+  const recommendations = records(record(team.recommendations).actions);
 
   const structuralCosts = records(team.roster_replacement_cost);
   const usableCosts = records(availability.usable_replacement_cost);
@@ -141,6 +148,27 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
       </div>
       {open ? (
         <div className="mt-3 space-y-4 text-sm">
+          <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recommended Next Moves</p>
+            {recommendations.length === 0 ? (
+              <p className="mt-1 text-muted-foreground">No urgent lineup or bye-week moves identified.</p>
+            ) : (
+              <ul className="mt-1 space-y-2">
+                {recommendations.slice(0, 6).map((action, index) => (
+                  <li key={`${action.position_or_slot}-${action.week}-${index}`} className="flex items-start gap-2">
+                    <Badge variant={urgencyVariant(action.urgency)} className="shrink-0">
+                      {String(action.urgency).replaceAll("_", " ").toUpperCase()}
+                    </Badge>
+                    <span>
+                      <span className="font-medium">{String(action.title)}</span>
+                      <span className="ml-1 text-muted-foreground">{String(action.reason)}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Availability</p>
             {unavailable.length === 0 ? (
