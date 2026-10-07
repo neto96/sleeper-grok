@@ -177,6 +177,81 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
     assert.match(nextMoves, /Sam LaPorta is unavailable/);
   });
 
+  it("omits weekly context when missing and renders only compact matched context when present", () => {
+    const withoutContext = snapshot();
+    assert.doesNotMatch(buildMarkdown(withoutContext), /#### Weekly Context/);
+
+    const data = snapshot();
+    data.fantasyAnalysis.weekly_context_by_player = {
+      laporta: {
+        match_status: "matched",
+        context: {
+          week: 5,
+          opponent: "MIN",
+          projection: { consensus_points: 14.8, low: null, high: null },
+          positional_rank: 12,
+          weekly_rank: 38,
+          matchup: { rating: "unknown", score: null },
+          source_metadata: [{ provider: "hidden-from-summary", capability: "rankings", observed_at: null }],
+        },
+      },
+    };
+    const text = buildMarkdown(data);
+    assert.match(text, /Sam LaPorta — vs MIN · Proj 14\.8 · TE12/);
+    assert.doesNotMatch(text, /hidden-from-summary/);
+  });
+
+  it("keeps analysis, waiver score ordering, recommendation urgency, and snapshot version unchanged with context", () => {
+    const data = snapshot();
+    const baseline = data.fantasyAnalysis;
+    const candidateRows = data.actionableWaiverAnalysis.candidates as AnalysisRecord[];
+    const orderedIds = candidateRows.map((candidate) => candidate.player_id);
+    const scores = candidateRows.map((candidate) => candidate.waiver_value_score);
+    const selected = (baseline.teams as Record<string, AnalysisRecord>)["1"]!;
+    const recommendationActions = ((selected.recommendations as AnalysisRecord).actions as AnalysisRecord[])
+      .map((action) => [action.category, action.urgency, action.week, action.position_or_slot]);
+    const baselineSnapshot = data.fantasyAnalysis;
+    const team = data.teams[0]!;
+    const withContext = buildAnalysisBundle(
+      [team],
+      [1],
+      data.rosterSlots,
+      Object.values(data.waiverByPosition).flat(),
+      1,
+      undefined,
+      {
+        laporta: {
+          match_status: "matched",
+          match_method: "provider_id",
+          match_reason: null,
+          context: {
+            week: 5,
+            opponent: "MIN",
+            sources: 1,
+            projection: { consensus_points: 14.8, low: null, high: null },
+            weekly_rank: 38,
+            positional_rank: 12,
+            matchup: { rating: "unknown", score: null },
+            rest_of_season: { rank: null, positional_rank: null },
+            confidence: { level: "low", reason: "Only one source provided a projection." },
+            source_metadata: [],
+          },
+        },
+      },
+    );
+    const resultTeam = (withContext.fantasyAnalysis.teams as Record<string, AnalysisRecord>)["1"]!;
+    assert.equal(withContext.snapshotVersion, "3.2");
+    assert.deepEqual(withContext.waiverAnalysis, data.waiverAnalysis);
+    assert.deepEqual(withContext.actionableWaiverAnalysis.candidates && (withContext.actionableWaiverAnalysis.candidates as AnalysisRecord[]).map((candidate) => candidate.player_id), orderedIds);
+    assert.deepEqual((withContext.actionableWaiverAnalysis.candidates as AnalysisRecord[]).map((candidate) => candidate.waiver_value_score), scores);
+    assert.deepEqual(((resultTeam.recommendations as AnalysisRecord).actions as AnalysisRecord[]).map((action) => [action.category, action.urgency, action.week, action.position_or_slot]), recommendationActions);
+    const baselineTeam = (baselineSnapshot.teams as Record<string, AnalysisRecord>)["1"]!;
+    for (const key of ["optimal_lineup", "position_need", "lineup_strength", "starting_depth", "future_readiness"]) {
+      assert.deepEqual(resultTeam[key], baselineTeam[key], key);
+    }
+    assert.deepEqual(resultTeam.availability, baselineTeam.availability);
+  });
+
   it("prioritizes actionable waivers while retaining structural context and the raw pool", () => {
     const { text, snapshot: data } = markdown();
     const actionable = text.split("### Actionable Recommendations")[1]?.split("### Structural Context")[0] ?? "";

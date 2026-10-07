@@ -7,6 +7,20 @@ import { cn } from "@/lib/utils";
 
 const OFFENSE = ["QB", "RB", "WR", "TE"] as const;
 
+function weeklyContextLabel(value: unknown, position: string): string | null {
+  if (!value || typeof value !== "object") return null;
+  const resolution = value as AnalysisRecord;
+  if (resolution.match_status !== "matched" || !resolution.context || typeof resolution.context !== "object") return null;
+  const context = resolution.context as AnalysisRecord;
+  const projection = context.projection && typeof context.projection === "object" ? context.projection as AnalysisRecord : {};
+  const matchup = context.matchup && typeof context.matchup === "object" ? context.matchup as AnalysisRecord : {};
+  const pieces: string[] = [];
+  if (typeof projection.consensus_points === "number") pieces.push(`Proj ${projection.consensus_points.toFixed(1)}`);
+  if (typeof context.positional_rank === "number") pieces.push(`${position}${context.positional_rank}`);
+  if (matchup.rating && matchup.rating !== "unknown") pieces.push(`${String(matchup.rating).replaceAll("_", " ")} matchup`);
+  return pieces.length ? pieces.join(" · ") : null;
+}
+
 function needVariant(need: unknown) {
   if (need === "high" || need === "critical") return "injury" as const;
   if (need === "low") return "accent" as const;
@@ -21,6 +35,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
   const [position, setPosition] = useState<FantasyPosition>("RB");
   const players = snapshot.waiverByPosition[position] ?? [];
   const analysis = snapshot.fantasyAnalysis;
+  const weeklyContextByPlayer = (analysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>;
   const structuralScarcity = (analysis?.league_position_scarcity ?? {}) as Record<string, AnalysisRecord>;
   const usableScarcity = (analysis?.league_usable_scarcity ?? {}) as Record<string, AnalysisRecord>;
   const mine = (analysis?.teams as Record<string, AnalysisRecord> | undefined)?.[String(snapshot.myRosterId)];
@@ -91,6 +106,11 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
                   <span className="min-w-0 truncate">
                     <span className="mr-2 text-muted-foreground">{String(player.position)}</span>
                     {String(player.name)}
+                    {weeklyContextLabel(weeklyContextByPlayer[String(player.player_id)], String(player.position)) ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {weeklyContextLabel(weeklyContextByPlayer[String(player.player_id)], String(player.position))}
+                      </span>
+                    ) : null}
                     {player.availability === "uncertain" ? (
                       <span className="ml-2 text-xs italic text-muted-foreground" aria-label="Availability: questionable">
                         Questionable

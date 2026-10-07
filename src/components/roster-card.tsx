@@ -34,16 +34,39 @@ function availabilityLabel(assessment?: AnalysisRecord): string | null {
   }
 }
 
+function contextSummary(value: AnalysisRecord | undefined, position: string): string | null {
+  if (!value || value.match_status !== "matched") return null;
+  const context = value.context && typeof value.context === "object" ? value.context as AnalysisRecord : {};
+  const projection = context.projection && typeof context.projection === "object"
+    ? context.projection as AnalysisRecord
+    : {};
+  const matchup = context.matchup && typeof context.matchup === "object"
+    ? context.matchup as AnalysisRecord
+    : {};
+  const pieces: string[] = [];
+  if (context.opponent) pieces.push(`vs ${String(context.opponent)}`);
+  if (typeof projection.consensus_points === "number") pieces.push(`Proj ${projection.consensus_points.toFixed(1)}`);
+  if (typeof context.positional_rank === "number") pieces.push(`${position}${context.positional_rank}`);
+  else if (typeof context.weekly_rank === "number") pieces.push(`Rank #${context.weekly_rank}`);
+  if (matchup.rating && matchup.rating !== "unknown") {
+    pieces.push(`${String(matchup.rating).replaceAll("_", " ")} matchup`);
+  }
+  return pieces.length ? pieces.join(" · ") : null;
+}
+
 function PlayerRow({
   player,
   dim,
   assessment,
+  weeklyContext,
 }: {
   player: PlayerSlot;
   dim?: boolean;
   assessment?: AnalysisRecord;
+  weeklyContext?: AnalysisRecord;
 }) {
   const label = availabilityLabel(assessment);
+  const context = contextSummary(weeklyContext, player.position);
   return (
     <li
       className={cn(
@@ -75,6 +98,7 @@ function PlayerRow({
             {label}
           </span>
         ) : null}
+        {context ? <span className="ml-2 text-xs text-muted-foreground">{context}</span> : null}
       </span>
       <span className="tabular-nums text-muted-foreground">
         {player.position}
@@ -88,10 +112,12 @@ function ExtraList({
   label,
   players,
   availability,
+  weeklyContextByPlayer,
 }: {
   label: string;
   players: PlayerSlot[];
   availability: Map<string, AnalysisRecord>;
+  weeklyContextByPlayer: Record<string, AnalysisRecord>;
 }) {
   if (players.length === 0) return null;
   return (
@@ -104,6 +130,7 @@ function ExtraList({
             player={player}
             dim
             assessment={availability.get(player.playerId)}
+            weeklyContext={weeklyContextByPlayer[player.playerId]}
           />
         ))}
       </ul>
@@ -116,12 +143,14 @@ export function RosterCard({
   rank,
   mine,
   analysis,
+  weeklyContextByPlayer = {},
   onSetMine,
 }: {
   team: TeamRoster;
   rank: number;
   mine?: boolean;
   analysis?: AnalysisRecord;
+  weeklyContextByPlayer?: Record<string, AnalysisRecord>;
   onSetMine?: () => void;
 }) {
   const [open, setOpen] = useState(Boolean(mine));
@@ -177,6 +206,7 @@ export function RosterCard({
             key={`${player.slot}-${player.playerId}`}
             player={player}
             assessment={playerAvailability.get(player.playerId)}
+            weeklyContext={weeklyContextByPlayer[player.playerId]}
           />
         ))}
       </ul>
@@ -202,6 +232,7 @@ export function RosterCard({
                 player={player}
                 dim
                 assessment={playerAvailability.get(player.playerId)}
+                weeklyContext={weeklyContextByPlayer[player.playerId]}
               />
             ))
           )}
@@ -210,8 +241,8 @@ export function RosterCard({
 
       {open ? (
         <>
-          <ExtraList label="IR / Reserve" players={team.reserve} availability={playerAvailability} />
-          <ExtraList label="Taxi" players={team.taxi} availability={playerAvailability} />
+          <ExtraList label="IR / Reserve" players={team.reserve} availability={playerAvailability} weeklyContextByPlayer={weeklyContextByPlayer} />
+          <ExtraList label="Taxi" players={team.taxi} availability={playerAvailability} weeklyContextByPlayer={weeklyContextByPlayer} />
         </>
       ) : null}
 

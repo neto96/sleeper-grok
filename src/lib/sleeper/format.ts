@@ -10,6 +10,7 @@ import {
 } from "./analysis/engine.ts";
 import { addFutureReadiness, type FutureReadinessOptions } from "./analysis/future-readiness.ts";
 import { addRecommendations } from "./analysis/recommendations.ts";
+import type { PlayerWeeklyContextResult } from "./analysis/weekly-context.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types";
 
 export function sleeperPoints(whole?: number | null, decimal?: number | null): number {
@@ -106,6 +107,23 @@ export function presentWaiverAnalysis(
   return { ...full, candidates };
 }
 
+function weeklyContextText(result: unknown, position: string): string | null {
+  const resolution = result && typeof result === "object" ? result as AnalysisRecord : {};
+  if (resolution.match_status !== "matched") return null;
+  const context = resolution.context && typeof resolution.context === "object" ? resolution.context as AnalysisRecord : {};
+  const projection = context.projection && typeof context.projection === "object" ? context.projection as AnalysisRecord : {};
+  const matchup = context.matchup && typeof context.matchup === "object" ? context.matchup as AnalysisRecord : {};
+  const pieces: string[] = [];
+  if (context.opponent) pieces.push(`vs ${String(context.opponent)}`);
+  if (typeof projection.consensus_points === "number") pieces.push(`Proj ${projection.consensus_points.toFixed(1)}`);
+  if (typeof context.positional_rank === "number") pieces.push(`${position}${context.positional_rank}`);
+  else if (typeof context.weekly_rank === "number") pieces.push(`Rank #${context.weekly_rank}`);
+  if (matchup.rating && matchup.rating !== "unknown") {
+    pieces.push(`${String(matchup.rating).replaceAll("_", " ")} matchup`);
+  }
+  return pieces.length ? pieces.join(" · ") : null;
+}
+
 export function presentActionableWaiverAnalysis(
   fantasyAnalysis: AnalysisRecord,
   waiverPool: AnalysisRecord[],
@@ -123,6 +141,8 @@ export function buildAnalysisBundle(
   waiverPlayers: WaiverPlayer[],
   myRosterId: number,
   futureReadiness?: FutureReadinessOptions,
+  weeklyContextByPlayer?: Record<string, PlayerWeeklyContextResult>,
+  weeklyContextStatus?: AnalysisRecord,
 ) {
   const byId = new Map(teams.map((team) => [team.rosterId, team]));
   const rosterData: Record<string, AnalysisRecord> = {};
@@ -153,6 +173,10 @@ export function buildAnalysisBundle(
       injury_status: player.injuryStatus,
       search_rank: player.searchRank,
     }));
+  if (weeklyContextByPlayer && Object.keys(weeklyContextByPlayer).length > 0) {
+    fantasyAnalysis.weekly_context_by_player = weeklyContextByPlayer as unknown as AnalysisRecord;
+  }
+  if (weeklyContextStatus) fantasyAnalysis.weekly_context_status = { ...weeklyContextStatus };
   const waiverAnalysis = presentWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId);
   const actionableWaiverAnalysis = presentActionableWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId);
   addRecommendations(fantasyAnalysis, actionableWaiverAnalysis, myRosterId);
@@ -225,6 +249,20 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
     }
   }
   lines.push("");
+  const contextByPlayer = (analysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>;
+  const selectedRoster = snapshot.teams.find((team) => team.rosterId === snapshot.myRosterId);
+  const contextPlayers = selectedRoster
+    ? [...selectedRoster.starters, ...selectedRoster.bench, ...selectedRoster.reserve, ...selectedRoster.taxi]
+    : [];
+  const contextRows = contextPlayers.flatMap((player) => {
+    const summary = weeklyContextText(contextByPlayer[player.playerId], player.position);
+    return summary ? [{ name: player.name, summary }] : [];
+  });
+  if (contextRows.length > 0) {
+    lines.push("#### Weekly Context");
+    for (const player of contextRows.slice(0, 20)) lines.push(`- ${md(player.name)} — ${md(player.summary)}`);
+    lines.push("");
+  }
   const availability = (mine.availability ?? {}) as AnalysisRecord;
   const availabilityPlayers = (availability.players ?? []) as AnalysisRecord[];
   const unavailable = availabilityPlayers.filter((player) => player.currently_usable === false);
@@ -451,6 +489,7 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
 
   lines.push("## Waiver Analysis");
   lines.push("");
+  const contextByPlayer = (snapshot.fantasyAnalysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>;
   const waiver = snapshot.actionableWaiverAnalysis;
   const candidates = Array.isArray(waiver?.candidates) ? (waiver.candidates as AnalysisRecord[]) : [];
   if (waiver?.available && candidates.length > 0) {
@@ -462,8 +501,9 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
     lines.push("");
     for (const player of candidates.slice(0, 20)) {
       const uncertainty = player.availability === "uncertain" ? " — Questionable" : "";
+      const context = weeklyContextText(contextByPlayer[String(player.player_id)], String(player.position ?? ""));
       lines.push(
-        `- **${md(String(player.name))}** (${player.position}${player.team ? `, ${player.team}` : ""})${uncertainty} — score ${player.waiver_value_score}, need ${player.team_need}, scarcity ${player.league_scarcity}`,
+        `- **${md(String(player.name))}** (${player.position}${player.team ? `, ${player.team}` : ""})${uncertainty} — score ${player.waiver_value_score}, need ${player.team_need}, scarcity ${player.league_scarcity}${context ? ` · ${md(context)}` : ""}`,
       );
     }
     lines.push("");

@@ -276,6 +276,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
                 rank={(snapshot.teams.findIndex((team) => team.rosterId === myTeam.rosterId) ?? 0) + 1}
                 mine
                 analysis={teamAnalysis(snapshot, myTeam.rosterId)}
+                weeklyContextByPlayer={(snapshot.fantasyAnalysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>}
               />
             ) : null}
             <div className="grid min-w-0 gap-4 md:grid-cols-2">
@@ -286,6 +287,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
                   rank={(snapshot.teams.findIndex((row) => row.rosterId === team.rosterId) ?? 0) + 1}
                   onSetMine={() => setMine(team.rosterId)}
                   analysis={teamAnalysis(snapshot, team.rosterId)}
+                  weeklyContextByPlayer={(snapshot.fantasyAnalysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>}
                 />
               ))}
             </div>

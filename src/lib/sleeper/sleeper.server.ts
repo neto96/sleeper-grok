@@ -1,6 +1,8 @@
 import { DEFAULT_MY_ROSTER_ID, FANTASY_POSITIONS, SLEEPER_API, SLEEPER_SCHEDULE_API, type FantasyPosition } from "./constants";
 import { buildAnalysisBundle, buildMarkdown, jsonFilename, markdownFilename, playerDisplayName, scoringLabel, sleeperPoints } from "./format";
 import { deriveByeWeeksFromSchedule } from "./analysis/future-readiness.ts";
+import { loadAlexandriaWeeklyContext } from "./analysis/weekly-context.server.ts";
+import type { PlayerIdentity } from "./analysis/weekly-context.ts";
 import type {
   LeagueSnapshot,
   LeagueTransaction,
@@ -79,6 +81,7 @@ type SleeperPlayer = {
   injury_status?: string | null;
   number?: number | null;
   search_rank?: number | null;
+  fantasy_data_id?: number | string | null;
 };
 
 type SleeperTransaction = {
@@ -416,6 +419,37 @@ export async function loadLeagueSnapshot(
   ];
 
   const fetchedAt = new Date().toISOString();
+  const contextPlayers = new Map<string, PlayerIdentity>();
+  for (const team of teams) {
+    for (const player of [...team.starters, ...team.bench, ...team.reserve, ...team.taxi]) {
+      contextPlayers.set(player.playerId, {
+        sleeperId: player.playerId,
+        name: player.name,
+        team: player.nflTeam,
+        position: player.position,
+        fantasyDataId: players[player.playerId]?.fantasy_data_id,
+      });
+    }
+  }
+  for (const player of waiverPlayers) {
+    contextPlayers.set(player.playerId, {
+      sleeperId: player.playerId,
+      name: player.name,
+      team: player.nflTeam,
+      position: player.position,
+      fantasyDataId: players[player.playerId]?.fantasy_data_id,
+    });
+  }
+  const firecrawlApiKey = typeof process !== "undefined" ? process.env.FIRECRAWL_API_KEY : undefined;
+  const weeklyContext = firecrawlApiKey
+    ? await loadAlexandriaWeeklyContext({
+      apiKey: firecrawlApiKey,
+      season: league.season,
+      week,
+      scoring: league.scoring_settings?.rec === 1 ? "PPR" : league.scoring_settings?.rec === 0.5 ? "HALF" : "STD",
+      players: [...contextPlayers.values()],
+    }).catch(() => null)
+    : null;
   const analysis = buildAnalysisBundle(
     teams,
     rosters.map((roster) => roster.roster_id),
@@ -429,6 +463,14 @@ export async function loadLeagueSnapshot(
         : 18,
       byeWeeksByTeam: byeSchedule.byeWeeksByTeam,
       byeScheduleAvailable: byeSchedule.available,
+    },
+    weeklyContext?.available ? weeklyContext.byPlayerId : undefined,
+    {
+      available: weeklyContext?.available === true,
+      status: weeklyContext?.available
+        ? "available"
+        : weeklyContext?.failure ?? (firecrawlApiKey ? "fetch_failed" : "not_configured"),
+      ...(weeklyContext?.stale ? { stale: true } : {}),
     },
   );
   const base = {
