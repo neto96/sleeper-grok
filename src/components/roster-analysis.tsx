@@ -122,6 +122,7 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
   const structuralSurplus = records(team.roster_surplus).filter((player) => player.surplus_type === "surplus");
   const actionableSurplus = records(availability.actionable_surplus).filter((player) => player.surplus_type === "surplus");
   const recommendations = records(record(team.recommendations).actions);
+  const weeklyStreaming = records(record(team.weekly_streaming_recommendations).actions);
 
   const structuralCosts = records(team.roster_replacement_cost);
   const usableCosts = records(availability.usable_replacement_cost);
@@ -167,6 +168,30 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
                 ))}
               </ul>
             )}
+            {weeklyStreaming.length > 0 ? (
+              <>
+                <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Weekly Streaming Options</p>
+                <ul className="mt-1 space-y-1 border-l-2 border-border pl-3">
+                {weeklyStreaming.slice(0, 5).map((action, index) => {
+                  const options = records(action.options);
+                  const names = options.map((option) => {
+                    const opportunity = record(option.opportunity);
+                    const rank = typeof opportunity.positional_rank === "number" ? ` (${String(option.position)}${opportunity.positional_rank})` : "";
+                    const projection = typeof opportunity.projection_points === "number" ? `, ${opportunity.projection_points.toFixed(1)} proj` : "";
+                    const opponent = opportunity.opponent ? ` vs ${String(opportunity.opponent)}` : "";
+                    const questionable = option.availability === "questionable" ? " (Questionable)" : "";
+                    return `${String(option.name)}${rank}${projection}${opponent}${questionable}`;
+                  }).join(", ");
+                  return (
+                    <li key={`weekly-${action.position}-${action.target_week}-${index}`} className="text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Week {String(action.target_week)} {String(action.position)}:</span>{" "}
+                      {names || String(action.reason)}
+                    </li>
+                  );
+                })}
+                </ul>
+              </>
+            ) : null}
           </div>
 
           <div>

@@ -5,6 +5,9 @@
  * rank, projected points, week and observed timestamp. Sleeper's fantasy_data_id
  * is the stable provider-id bridge; otherwise matching is name/team/position,
  * then uniquely name/position. Ambiguous records are never merged.
+ * Set the server-only FIRECRAWL_API_KEY to enable the cached current-week
+ * Alexandria fetch; without it snapshots retain the Phase 2 recommendation
+ * output and expose no invented weekly ranks.
  * The production fetch/cache lives in weekly-context.server.ts. FantasyData
  * supplies one source only; matchup ratings, floor/ceiling and ROS values are
  * unavailable there. Context never changes V3.3/V3.4 valuation or waiver scores.

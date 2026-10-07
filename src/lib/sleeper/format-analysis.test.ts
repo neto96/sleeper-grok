@@ -197,7 +197,7 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
       },
     };
     const text = buildMarkdown(data);
-    assert.match(text, /Sam LaPorta — vs MIN · Proj 14\.8 · TE12/);
+    assert.match(text, /Sam LaPorta — Week 5 · vs MIN · Proj 14\.8 · TE12/);
     assert.doesNotMatch(text, /hidden-from-summary/);
   });
 
@@ -250,6 +250,41 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
       assert.deepEqual(resultTeam[key], baselineTeam[key], key);
     }
     assert.deepEqual(resultTeam.availability, baselineTeam.availability);
+  });
+
+  it("renders weekly opportunity separately from waiver score and keeps streaming text week-specific", () => {
+    const data = snapshot();
+    const team = (data.fantasyAnalysis.teams as Record<string, AnalysisRecord>)["1"]!;
+    team.weekly_streaming_recommendations = {
+      actions: [{
+        urgency: "act_now",
+        position: "TE",
+        target_week: 6,
+        title: "Add a TE for Week 6",
+        rankings_available: true,
+        reason: "Informational weekly ranks.",
+        options: [{
+          player_id: "hunter",
+          name: "Hunter Henry",
+          position: "TE",
+          waiver_value_score: 42,
+          availability: "questionable",
+          opportunity: { target_week: 6, positional_rank: 8, opportunity: "good" },
+        }],
+      }],
+    };
+    data.fantasyAnalysis.weekly_opportunity_by_player = {
+      hunter: { target_week: 6, position: "TE", positional_rank: 8, opportunity: "good" },
+    };
+    data.actionableWaiverAnalysis.candidates = [{
+      player_id: "hunter", name: "Hunter Henry", position: "TE", waiver_value_score: 42,
+      team_need: "thin", league_scarcity: "moderate", currently_usable: true,
+    }];
+    const text = buildMarkdown(data);
+    assert.match(text, /\*\*Week 6 TE:\*\* Hunter Henry \(TE8\) \(Questionable\)/);
+    assert.match(text, /Week 6 TE8 good short-term/);
+    assert.match(text, /Waiver score 42/);
+    assert.equal(data.snapshotVersion, "3.2");
   });
 
   it("prioritizes actionable waivers while retaining structural context and the raw pool", () => {

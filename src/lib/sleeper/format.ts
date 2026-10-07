@@ -11,6 +11,7 @@ import {
 import { addFutureReadiness, type FutureReadinessOptions } from "./analysis/future-readiness.ts";
 import { addRecommendations } from "./analysis/recommendations.ts";
 import type { PlayerWeeklyContextResult } from "./analysis/weekly-context.ts";
+import { buildWeeklyOpportunityView } from "./analysis/weekly-opportunity.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types";
 
 export function sleeperPoints(whole?: number | null, decimal?: number | null): number {
@@ -114,6 +115,7 @@ function weeklyContextText(result: unknown, position: string): string | null {
   const projection = context.projection && typeof context.projection === "object" ? context.projection as AnalysisRecord : {};
   const matchup = context.matchup && typeof context.matchup === "object" ? context.matchup as AnalysisRecord : {};
   const pieces: string[] = [];
+  if (typeof context.week === "number") pieces.push(`Week ${context.week}`);
   if (context.opponent) pieces.push(`vs ${String(context.opponent)}`);
   if (typeof projection.consensus_points === "number") pieces.push(`Proj ${projection.consensus_points.toFixed(1)}`);
   if (typeof context.positional_rank === "number") pieces.push(`${position}${context.positional_rank}`);
@@ -180,6 +182,29 @@ export function buildAnalysisBundle(
   const waiverAnalysis = presentWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId);
   const actionableWaiverAnalysis = presentActionableWaiverAnalysis(fantasyAnalysis, analysisWaiverPool, myRosterId);
   addRecommendations(fantasyAnalysis, actionableWaiverAnalysis, myRosterId);
+  if (weeklyContextStatus?.available === true && weeklyContextByPlayer) {
+    const teams = fantasyAnalysis.teams as Record<string, AnalysisRecord>;
+    const selectedTeam = teams[String(myRosterId)];
+    if (selectedTeam) {
+      const freeAgentPool = waiverPlayers
+        .filter((player) => player.position === "K" || player.position === "DEF")
+        .map((player) => ({
+          player_id: player.playerId,
+          name: player.name,
+          position: player.position,
+          status: player.status,
+          injury_status: player.injuryStatus,
+        }));
+      const view = buildWeeklyOpportunityView(
+        selectedTeam,
+        actionableWaiverAnalysis,
+        weeklyContextByPlayer,
+        freeAgentPool,
+      );
+      if (Object.keys(view.by_player).length > 0) fantasyAnalysis.weekly_opportunity_by_player = view.by_player as AnalysisRecord;
+      selectedTeam.weekly_streaming_recommendations = { actions: view.actions } as unknown as AnalysisRecord;
+    }
+  }
   return {
     snapshotVersion: SNAPSHOT_VERSION,
     fantasyAnalysis,
@@ -246,6 +271,23 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
       const urgency = String(action.urgency ?? "watch").replaceAll("_", " ").toUpperCase();
       const label = `${urgency}${action.position_or_slot ? ` — ${action.position_or_slot}` : ""}${action.week != null ? `, Week ${action.week}` : ""}`;
       lines.push(`- **${label}:** ${md(String(action.title ?? "Review roster"))}. ${md(String(action.reason ?? ""))}`);
+    }
+  }
+  const weeklyStreaming = ((mine.weekly_streaming_recommendations ?? {}) as AnalysisRecord).actions as AnalysisRecord[] | undefined;
+  if (weeklyStreaming?.length) {
+    lines.push("");
+    lines.push("#### Weekly Streaming Options");
+    for (const action of weeklyStreaming.slice(0, 5)) {
+      const options = Array.isArray(action.options) ? action.options as AnalysisRecord[] : [];
+      const optionText = options.map((option) => {
+        const opportunity = (option.opportunity ?? {}) as AnalysisRecord;
+        const rank = typeof opportunity.positional_rank === "number" ? ` (${option.position}${opportunity.positional_rank})` : "";
+        const projection = typeof opportunity.projection_points === "number" ? `, ${opportunity.projection_points.toFixed(1)} proj` : "";
+        const opponent = opportunity.opponent ? ` vs ${String(opportunity.opponent)}` : "";
+        const questionable = option.availability === "questionable" ? " (Questionable)" : "";
+        return `${md(String(option.name))}${rank}${projection}${opponent}${questionable}`;
+      }).join(", ");
+      lines.push(`- **Week ${action.target_week} ${md(String(action.position))}:** ${optionText || md(String(action.reason ?? "Streaming rankings unavailable."))}`);
     }
   }
   lines.push("");
@@ -490,6 +532,7 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
   lines.push("## Waiver Analysis");
   lines.push("");
   const contextByPlayer = (snapshot.fantasyAnalysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>;
+  const opportunityByPlayer = (snapshot.fantasyAnalysis.weekly_opportunity_by_player ?? {}) as Record<string, AnalysisRecord>;
   const waiver = snapshot.actionableWaiverAnalysis;
   const candidates = Array.isArray(waiver?.candidates) ? (waiver.candidates as AnalysisRecord[]) : [];
   if (waiver?.available && candidates.length > 0) {
@@ -502,8 +545,15 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
     for (const player of candidates.slice(0, 20)) {
       const uncertainty = player.availability === "uncertain" ? " — Questionable" : "";
       const context = weeklyContextText(contextByPlayer[String(player.player_id)], String(player.position ?? ""));
+      const opportunity = opportunityByPlayer[String(player.player_id)];
+      const opportunityRank = typeof opportunity?.positional_rank === "number"
+        ? ` ${player.position}${opportunity.positional_rank}`
+        : "";
+      const opportunityText = opportunity && opportunity.opportunity !== "unknown"
+        ? ` · Week ${opportunity.target_week}${opportunityRank} ${String(opportunity.opportunity)} short-term`
+        : "";
       lines.push(
-        `- **${md(String(player.name))}** (${player.position}${player.team ? `, ${player.team}` : ""})${uncertainty} — score ${player.waiver_value_score}, need ${player.team_need}, scarcity ${player.league_scarcity}${context ? ` · ${md(context)}` : ""}`,
+        `- **${md(String(player.name))}** (${player.position}${player.team ? `, ${player.team}` : ""})${uncertainty} — Waiver score ${player.waiver_value_score}, need ${player.team_need}, scarcity ${player.league_scarcity}${context ? ` · ${md(context)}` : ""}${opportunityText}`,
       );
     }
     lines.push("");
@@ -584,8 +634,12 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
 
 export function applyMyRoster(snapshot: LeagueSnapshot, myRosterId: number): LeagueSnapshot {
   const teams = { ...((snapshot.fantasyAnalysis.teams ?? {}) as Record<string, AnalysisRecord>) };
-  for (const [rosterId, team] of Object.entries(teams)) teams[rosterId] = { ...team };
+  for (const [rosterId, team] of Object.entries(teams)) {
+    teams[rosterId] = { ...team };
+    delete teams[rosterId]!.weekly_streaming_recommendations;
+  }
   const fantasyAnalysis = { ...snapshot.fantasyAnalysis, teams };
+  delete fantasyAnalysis.weekly_opportunity_by_player;
   const waiverAnalysis = presentWaiverAnalysis(fantasyAnalysis, snapshot.analysisWaiverPool ?? [], myRosterId);
   const actionableWaiverAnalysis = presentActionableWaiverAnalysis(
     fantasyAnalysis,
@@ -593,6 +647,24 @@ export function applyMyRoster(snapshot: LeagueSnapshot, myRosterId: number): Lea
     myRosterId,
   );
   addRecommendations(fantasyAnalysis, actionableWaiverAnalysis, myRosterId);
+  const weeklyContextStatus = (fantasyAnalysis.weekly_context_status ?? {}) as AnalysisRecord;
+  const weeklyContextByPlayer = (fantasyAnalysis.weekly_context_by_player ?? {}) as Record<string, PlayerWeeklyContextResult>;
+  if (weeklyContextStatus.available === true) {
+    const selectedTeam = teams[String(myRosterId)];
+    if (selectedTeam) {
+      const freeAgentPool = snapshot.waiverByPosition.K?.concat(snapshot.waiverByPosition.DEF ?? [])
+        .map((player) => ({
+          player_id: player.playerId,
+          name: player.name,
+          position: player.position,
+          status: player.status,
+          injury_status: player.injuryStatus,
+        })) ?? [];
+      const view = buildWeeklyOpportunityView(selectedTeam, actionableWaiverAnalysis, weeklyContextByPlayer, freeAgentPool);
+      if (Object.keys(view.by_player).length > 0) fantasyAnalysis.weekly_opportunity_by_player = view.by_player as AnalysisRecord;
+      selectedTeam.weekly_streaming_recommendations = { actions: view.actions } as unknown as AnalysisRecord;
+    }
+  }
   const next = {
     ...snapshot,
     myRosterId,

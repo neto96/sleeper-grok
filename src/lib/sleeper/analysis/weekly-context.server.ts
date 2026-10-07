@@ -101,27 +101,29 @@ export function createWeeklyContextLoader(
         : cached.value;
     }
     try {
-      const response = await fetcher("https://api.firecrawl.dev/v2/scrape", {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${request.apiKey}`,
-        },
-        body: JSON.stringify({
-          alexandria: {
-            provider: PROVIDER,
-            capability: CAPABILITY,
-            options: { position: "ALL", scoring: request.scoring },
+      const fetchPosition = async (position: "ALL" | "DST") => {
+        const response = await fetcher("https://api.firecrawl.dev/v2/scrape", {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${request.apiKey}`,
           },
-        }),
-        signal: AbortSignal.timeout(12_000),
-      });
-      if (!response.ok) throw new Error("provider_request_failed");
-      const payload = await response.json() as unknown;
-      const root = object(payload);
-      if (root.success === false) throw new Error("provider_request_failed");
-      const providerPayload = extractProviderPayload(payload);
+          body: JSON.stringify({
+            alexandria: {
+              provider: PROVIDER,
+              capability: CAPABILITY,
+              options: { position, scoring: request.scoring },
+            },
+          }),
+          signal: AbortSignal.timeout(12_000),
+        });
+        if (!response.ok) throw new Error("provider_request_failed");
+        const payload = await response.json() as unknown;
+        if (object(payload).success === false) throw new Error("provider_request_failed");
+        return extractProviderPayload(payload);
+      };
+      const providerPayload = await fetchPosition("ALL");
       const week = Number(providerPayload?.week);
       if (!providerPayload || !Array.isArray(providerPayload.players) || week !== request.week) {
         const value = cached?.providerData
@@ -133,6 +135,14 @@ export function createWeeklyContextLoader(
       const records = providerPayload.players.filter((row): row is ExternalWeeklyPlayer =>
         row != null && typeof row === "object" && !Array.isArray(row),
       );
+      // Alexandria publishes DST rankings separately from its ALL offensive/K board.
+      // A DST failure does not discard the usable primary board.
+      const defensePayload = await fetchPosition("DST").catch(() => null);
+      if (defensePayload && Number(defensePayload.week) === request.week && Array.isArray(defensePayload.players)) {
+        records.push(...defensePayload.players.filter((row): row is ExternalWeeklyPlayer =>
+          row != null && typeof row === "object" && !Array.isArray(row),
+        ));
+      }
       const observedAtMs = Number(providerPayload.observed_at_ms);
       const observedAt = Number.isFinite(observedAtMs) && observedAtMs > 0
         ? new Date(observedAtMs).toISOString()

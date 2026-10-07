@@ -15,10 +15,23 @@ function weeklyContextLabel(value: unknown, position: string): string | null {
   const projection = context.projection && typeof context.projection === "object" ? context.projection as AnalysisRecord : {};
   const matchup = context.matchup && typeof context.matchup === "object" ? context.matchup as AnalysisRecord : {};
   const pieces: string[] = [];
+  if (typeof context.week === "number") pieces.push(`Week ${context.week}`);
   if (typeof projection.consensus_points === "number") pieces.push(`Proj ${projection.consensus_points.toFixed(1)}`);
   if (typeof context.positional_rank === "number") pieces.push(`${position}${context.positional_rank}`);
   if (matchup.rating && matchup.rating !== "unknown") pieces.push(`${String(matchup.rating).replaceAll("_", " ")} matchup`);
   return pieces.length ? pieces.join(" · ") : null;
+}
+
+function weeklyOpportunityLabel(value: unknown): string | null {
+  if (!value || typeof value !== "object") return null;
+  const opportunity = value as AnalysisRecord;
+  if (opportunity.opportunity === "unknown") return null;
+  const rank = typeof opportunity.positional_rank === "number"
+    ? `${String(opportunity.position)}${opportunity.positional_rank}`
+    : null;
+  const label = String(opportunity.opportunity);
+  const opponent = opportunity.opponent ? ` · vs ${String(opportunity.opponent)}` : "";
+  return `Week ${String(opportunity.target_week)}${rank ? `: ${rank}` : ""}${opponent} · ${label[0]?.toUpperCase()}${label.slice(1)} short-term`;
 }
 
 function needVariant(need: unknown) {
@@ -36,6 +49,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
   const players = snapshot.waiverByPosition[position] ?? [];
   const analysis = snapshot.fantasyAnalysis;
   const weeklyContextByPlayer = (analysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>;
+  const weeklyOpportunityByPlayer = (analysis.weekly_opportunity_by_player ?? {}) as Record<string, AnalysisRecord>;
   const structuralScarcity = (analysis?.league_position_scarcity ?? {}) as Record<string, AnalysisRecord>;
   const usableScarcity = (analysis?.league_usable_scarcity ?? {}) as Record<string, AnalysisRecord>;
   const mine = (analysis?.teams as Record<string, AnalysisRecord> | undefined)?.[String(snapshot.myRosterId)];
@@ -44,6 +58,9 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
   const usableNeed = (availability.usable_position_need ?? {}) as Record<string, AnalysisRecord>;
   const recommendations = Array.isArray((mine?.recommendations as AnalysisRecord | undefined)?.actions)
     ? (((mine?.recommendations as AnalysisRecord).actions as AnalysisRecord[]))
+    : [];
+  const streamingRecommendations = Array.isArray((mine?.weekly_streaming_recommendations as AnalysisRecord | undefined)?.actions)
+    ? (((mine?.weekly_streaming_recommendations as AnalysisRecord).actions as AnalysisRecord[]))
     : [];
   const actionable = snapshot.actionableWaiverAnalysis;
   const actionableCandidates = Array.isArray(actionable?.candidates)
@@ -78,6 +95,30 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
               ))}
             </ul>
           )}
+          {streamingRecommendations.length > 0 ? (
+            <>
+              <h4 className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Weekly Streaming Options</h4>
+              <ul className="mt-1 space-y-1.5 border-l-2 border-border pl-3">
+              {streamingRecommendations.slice(0, 5).map((action, index) => {
+                const options = Array.isArray(action.options) ? action.options as AnalysisRecord[] : [];
+                return (
+                  <li key={`weekly-${action.position}-${action.target_week}-${index}`} className="text-sm">
+                    <span className="font-medium">Week {String(action.target_week)} {String(action.position)}:</span>{" "}
+                    {options.length > 0 ? options.map((option) => {
+                      const rank = typeof (option.opportunity as AnalysisRecord | undefined)?.positional_rank === "number"
+                        ? ` (${String(option.position)}${String((option.opportunity as AnalysisRecord).positional_rank)})`
+                        : "";
+                      const details = option.opportunity as AnalysisRecord | undefined;
+                      const projection = typeof details?.projection_points === "number" ? `, ${details.projection_points.toFixed(1)} proj` : "";
+                      const opponent = details?.opponent ? ` vs ${String(details.opponent)}` : "";
+                      return `${String(option.name)}${rank}${projection}${opponent}${option.availability === "questionable" ? " (Questionable)" : ""}`;
+                    }).join(", ") : String(action.reason)}
+                  </li>
+                );
+              })}
+              </ul>
+            </>
+          ) : null}
         </div>
 
         <div className="mt-4">
@@ -111,6 +152,11 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
                         {weeklyContextLabel(weeklyContextByPlayer[String(player.player_id)], String(player.position))}
                       </span>
                     ) : null}
+                    {weeklyOpportunityLabel(weeklyOpportunityByPlayer[String(player.player_id)]) ? (
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {weeklyOpportunityLabel(weeklyOpportunityByPlayer[String(player.player_id)])}
+                      </span>
+                    ) : null}
                     {player.availability === "uncertain" ? (
                       <span className="ml-2 text-xs italic text-muted-foreground" aria-label="Availability: questionable">
                         Questionable
@@ -118,7 +164,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
                     ) : null}
                   </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">
-                    {String(player.waiver_value_score)} · {String(player.team_need)} need · {String(player.league_scarcity)} scarcity
+                    Waiver score {String(player.waiver_value_score)} · {String(player.team_need)} need · {String(player.league_scarcity)} scarcity
                   </span>
                 </li>
               ))

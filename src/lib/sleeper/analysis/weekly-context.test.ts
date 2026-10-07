@@ -131,11 +131,11 @@ describe("V3.5 weekly context identity and normalization", () => {
 });
 
 describe("V3.5 weekly context server adapter", () => {
-  function response(week = 6) {
+  function response(week = 6, position = "ALL") {
     return new Response(JSON.stringify({
       success: true,
       data: {
-        alexandria: [{ provider: "fantasydata-com", data: { week, observed_at_ms: 1790968311987, players: [external({ player_id: "fd-1" })] } }],
+        alexandria: [{ provider: "fantasydata-com", data: { week, observed_at_ms: 1790968311987, players: position === "DST" ? [external({ player_id: "dst-1", name: "Buffalo Bills", position: "DST", team: "BUF", pos_rank: "DST1" })] : [external({ player_id: "fd-1" })] } }],
       },
     }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
@@ -151,7 +151,11 @@ describe("V3.5 weekly context server adapter", () => {
   it("caches a successful provider response for the configured TTL", async () => {
     let calls = 0;
     let now = 100;
-    const load = createWeeklyContextLoader(async () => { calls += 1; return response(); }, () => now);
+    const load = createWeeklyContextLoader(async (_url, init) => {
+      calls += 1;
+      const request = JSON.parse(String(init?.body)) as { alexandria: { options: { position: string } } };
+      return response(6, request.alexandria.options.position);
+    }, () => now);
     const request = { apiKey: "fixture-only", season: "2026", week: 6, scoring: "PPR" as const, players: [sleeperPlayer] };
     const first = await load(request);
     now += WEEKLY_CONTEXT_TTL_MS - 1;
@@ -164,7 +168,7 @@ describe("V3.5 weekly context server adapter", () => {
     assert.equal(second.available, true);
     assert.ok(otherLeague.byPlayerId["other-league-player"]);
     assert.equal(otherLeague.byPlayerId["sleeper-1"], undefined);
-    assert.equal(calls, 1);
+    assert.equal(calls, 2);
     assert.equal(second.byPlayerId["sleeper-1"]?.context?.week, 6);
   });
 

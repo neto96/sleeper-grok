@@ -44,6 +44,7 @@ function contextSummary(value: AnalysisRecord | undefined, position: string): st
     ? context.matchup as AnalysisRecord
     : {};
   const pieces: string[] = [];
+  if (typeof context.week === "number") pieces.push(`Week ${context.week}`);
   if (context.opponent) pieces.push(`vs ${String(context.opponent)}`);
   if (typeof projection.consensus_points === "number") pieces.push(`Proj ${projection.consensus_points.toFixed(1)}`);
   if (typeof context.positional_rank === "number") pieces.push(`${position}${context.positional_rank}`);
