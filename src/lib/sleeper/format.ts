@@ -8,6 +8,7 @@ import {
   parseRosterConfiguration,
   type AnalysisRecord,
 } from "./analysis/engine.ts";
+import { addFutureReadiness, type FutureReadinessOptions } from "./analysis/future-readiness.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types";
 
 export function sleeperPoints(whole?: number | null, decimal?: number | null): number {
@@ -120,6 +121,7 @@ export function buildAnalysisBundle(
   rosterPositions: string[],
   waiverPlayers: WaiverPlayer[],
   myRosterId: number,
+  futureReadiness?: FutureReadinessOptions,
 ) {
   const byId = new Map(teams.map((team) => [team.rosterId, team]));
   const rosterData: Record<string, AnalysisRecord> = {};
@@ -136,7 +138,9 @@ export function buildAnalysisBundle(
       taxi: team.taxi.map((player) => ({ player_id: player.playerId })),
     };
   }
-  const fantasyAnalysis = buildFantasyAnalysis(rosterData, parseRosterConfiguration(rosterPositions));
+  const rosterConfiguration = parseRosterConfiguration(rosterPositions);
+  const fantasyAnalysis = buildFantasyAnalysis(rosterData, rosterConfiguration);
+  if (futureReadiness) addFutureReadiness(fantasyAnalysis, rosterConfiguration, futureReadiness);
   const analysisWaiverPool = waiverPlayers
     .filter((player) => player.position === "QB" || player.position === "RB" || player.position === "WR" || player.position === "TE")
     .map((player) => ({

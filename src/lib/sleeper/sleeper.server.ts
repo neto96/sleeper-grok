@@ -1,5 +1,6 @@
-import { DEFAULT_MY_ROSTER_ID, FANTASY_POSITIONS, SLEEPER_API, type FantasyPosition } from "./constants";
+import { DEFAULT_MY_ROSTER_ID, FANTASY_POSITIONS, SLEEPER_API, SLEEPER_SCHEDULE_API, type FantasyPosition } from "./constants";
 import { buildAnalysisBundle, buildMarkdown, jsonFilename, markdownFilename, playerDisplayName, scoringLabel, sleeperPoints } from "./format";
+import { deriveByeWeeksFromSchedule } from "./analysis/future-readiness.ts";
 import type {
   LeagueSnapshot,
   LeagueTransaction,
@@ -23,6 +24,7 @@ type SleeperLeague = {
   settings?: {
     waiver_budget?: number;
     playoff_teams?: number;
+    playoff_week_start?: number;
     num_teams?: number;
     waiver_type?: number;
   };
@@ -105,9 +107,10 @@ const PLAYER_TTL_MS = 24 * 60 * 60 * 1000;
 const WAIVER_PER_POSITION = 30;
 let playerCache: PlayerCache | null = null;
 
-async function sleeperGet<T>(path: string): Promise<T> {
-  const response = await fetch(`${SLEEPER_API}${path}`, {
+async function sleeperGetFrom<T>(baseUrl: string, path: string): Promise<T> {
+  const response = await fetch(`${baseUrl}${path}`, {
     headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
   });
   if (response.status === 404) {
     throw new Error("League not found on Sleeper. Check the league ID.");
@@ -118,9 +121,13 @@ async function sleeperGet<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-async function sleeperGetOptional<T>(path: string, fallback: T): Promise<T> {
+async function sleeperGet<T>(path: string): Promise<T> {
+  return sleeperGetFrom<T>(SLEEPER_API, path);
+}
+
+async function sleeperGetOptional<T>(path: string, fallback: T, baseUrl = SLEEPER_API): Promise<T> {
   try {
-    return await sleeperGet<T>(path);
+    return await sleeperGetFrom<T>(baseUrl, path);
   } catch {
     return fallback;
   }
@@ -231,7 +238,7 @@ export async function loadLeagueSnapshot(
   const week = state.week ?? 1;
   const weeks = recentWeeks(week);
 
-  const [players, txByWeek, matchupByWeek] = await Promise.all([
+  const [players, txByWeek, matchupByWeek, scheduleGames] = await Promise.all([
     getPlayerMap().catch(() => ({}) as Record<string, SleeperPlayer>),
     Promise.all(
       weeks.map(async (w) => ({
@@ -245,7 +252,9 @@ export async function loadLeagueSnapshot(
         rows: await sleeperGetOptional<SleeperMatchup[]>(`/league/${id}/matchups/${w}`, []),
       })),
     ),
+    sleeperGetOptional<unknown[]>(`/nfl/regular/${league.season}`, [], SLEEPER_SCHEDULE_API),
   ]);
+  const byeSchedule = deriveByeWeeksFromSchedule(scheduleGames);
 
   const usersById = new Map(users.map((user) => [user.user_id, user]));
   const starterSlots = (league.roster_positions ?? []).filter((slot) => slot !== "BN");
@@ -413,6 +422,14 @@ export async function loadLeagueSnapshot(
     league.roster_positions ?? [],
     waiverPlayers,
     myRosterId,
+    {
+      currentWeek: week,
+      regularSeasonEndWeek: league.settings?.playoff_week_start
+        ? league.settings.playoff_week_start - 1
+        : 18,
+      byeWeeksByTeam: byeSchedule.byeWeeksByTeam,
+      byeScheduleAvailable: byeSchedule.available,
+    },
   );
   const base = {
     fetchedAt,
