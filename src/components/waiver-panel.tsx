@@ -1,9 +1,12 @@
+import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "@/lib/sleeper/priority-waivers";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { FANTASY_POSITIONS, type FantasyPosition } from "@/lib/sleeper/constants";
 import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 import type { LeagueSnapshot } from "@/lib/sleeper/types";
 import { cn } from "@/lib/utils";
+
+import { needLabel, scarcityLabel } from "@/lib/sleeper/presentation";
 
 const OFFENSE = ["QB", "RB", "WR", "TE"] as const;
 
@@ -40,10 +43,6 @@ function needVariant(need: unknown) {
   return "default" as const;
 }
 
-function display(value: unknown): string {
-  return value == null || value === "" ? "—" : String(value);
-}
-
 export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
   const [position, setPosition] = useState<FantasyPosition>("RB");
   const players = snapshot.waiverByPosition[position] ?? [];
@@ -62,6 +61,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
   const streamingRecommendations = Array.isArray((mine?.weekly_streaming_recommendations as AnalysisRecord | undefined)?.actions)
     ? (((mine?.weekly_streaming_recommendations as AnalysisRecord).actions as AnalysisRecord[]))
     : [];
+  const priorityGroups = priorityWaiverGroups(snapshot);
   const actionable = snapshot.actionableWaiverAnalysis;
   const actionableCandidates = Array.isArray(actionable?.candidates)
     ? (actionable.candidates as AnalysisRecord[])
@@ -76,7 +76,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
         <h2 className="font-display text-xl font-semibold tracking-tight">Waiver analysis</h2>
         <p className="mt-1 text-sm text-pretty text-muted-foreground">
           {actionable?.available
-            ? `Actionable adds for ${String(actionable.team)}. Recommendations use currently usable team need and usable league scarcity.`
+            ? `Available adds for ${String(actionable.team)}. Rankings reflect your available players and depth across the league.`
             : "Select a roster that is in this league to score waiver adds."}
         </p>
 
@@ -126,20 +126,32 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
           <div className="mt-2 flex flex-wrap gap-1.5">
             {OFFENSE.map((pos) => (
               <Badge key={pos} variant={needVariant(usableNeed[pos]?.need)}>
-                {pos} need · Structural {display(structuralNeed[pos]?.need)} · Usable {display(usableNeed[pos]?.need)}
+                {pos} · All roster: {needLabel(structuralNeed[pos]?.need)} · Available players: {needLabel(usableNeed[pos]?.need)}
               </Badge>
             ))}
           </div>
         </div>
 
+        {priorityGroups.map((group) => (
+          <div key={`${group.slot}-${group.week}`} className="mt-4 rounded-lg border border-border p-3">
+            <h3 className="font-medium">{group.title}</h3>
+            {group.candidates.length > 0 ? (
+              <ol className="mt-2 list-inside list-decimal space-y-1 text-sm">
+                {group.candidates.map((player) => <li key={String(player.player_id)}>{String(player.name)}{player.availability === "uncertain" ? " (Questionable)" : ""}</li>)}
+              </ol>
+            ) : <p className="mt-2 text-sm text-muted-foreground">No available candidates found for this need.</p>}
+            <p className="mt-2 text-xs text-muted-foreground">{PRIORITY_WAIVER_NOTE}</p>
+          </div>
+        ))}
+
         <div className="mt-4">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Actionable Recommendations
+            {priorityGroups.length > 0 ? "Other Waiver Opportunities" : "Available Waiver Options"}
           </h3>
           <ul className="mt-1 divide-y divide-border/80">
             {!actionable?.available || actionableCandidates.length === 0 ? (
               <li className="py-3 text-sm text-muted-foreground">
-                {actionable?.available ? "No actionable offensive waiver candidates." : "No actionable recommendations available."}
+                {actionable?.available ? "No available offensive waiver candidates." : "No waiver recommendations available."}
               </li>
             ) : (
               actionableCandidates.slice(0, 12).map((player) => (
@@ -164,7 +176,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
                     ) : null}
                   </span>
                   <span className="shrink-0 tabular-nums text-muted-foreground">
-                    Waiver score {String(player.waiver_value_score)} · {String(player.team_need)} need · {String(player.league_scarcity)} scarcity
+                    Waiver score {String(player.waiver_value_score)} · {needLabel(player.team_need)} · {scarcityLabel(player.league_scarcity)}
                   </span>
                 </li>
               ))
@@ -173,9 +185,9 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
         </div>
 
         <div className="mt-3 border-t border-border/80 pt-3">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Structural Context</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">All-Player Context</h3>
           <p className="mt-1 text-xs text-muted-foreground">
-            {structuralCandidates.length} structural candidate{structuralCandidates.length === 1 ? "" : "s"} may be valuable roster adds; structural analysis can include players who are unavailable now.
+            {structuralCandidates.length} candidate{structuralCandidates.length === 1 ? "" : "s"} in the all-player rankings, including players who are unavailable now.
           </p>
         </div>
 
@@ -186,10 +198,10 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
               <li key={pos} className="flex flex-wrap items-center gap-x-2 text-sm">
                 <span className="w-7 font-medium">{pos}</span>
                 <span className="text-muted-foreground">
-                  Structural: {display(structuralScarcity[pos]?.scarcity)}
+                  All roster: {scarcityLabel(structuralScarcity[pos]?.scarcity)}
                 </span>
                 <span className="text-muted-foreground">
-                  · Usable: {display(usableScarcity[pos]?.scarcity)}
+                  · Available players: {scarcityLabel(usableScarcity[pos]?.scarcity)}
                 </span>
               </li>
             ))}

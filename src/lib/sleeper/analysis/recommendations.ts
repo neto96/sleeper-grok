@@ -1,4 +1,5 @@
 import type { AnalysisRecord } from "./engine.ts";
+import { recommendSafeDrop, type RecommendedDrop } from "./recommended-drop.ts";
 
 export type RecommendationUrgency = "act_now" | "plan_ahead" | "watch" | "opportunity" | "none";
 export type RecommendationCategory =
@@ -18,6 +19,7 @@ export type RecommendationAction = {
   title: string;
   reason: string;
   related_player_ids: string[];
+  recommended_drop?: RecommendedDrop | null;
 };
 
 const ORDER: Record<RecommendationUrgency, number> = {
@@ -55,8 +57,8 @@ function waiverCandidates(analysis: AnalysisRecord, position: string): AnalysisR
 
 function candidateNames(candidates: AnalysisRecord[]): string {
   const names = candidates.slice(0, 3).map((candidate) => String(candidate.name ?? "")).filter(Boolean);
-  if (names.length === 0) return "No currently usable actionable waiver options are available.";
-  return `Best available options currently include ${names.join(" and ")}.`;
+  if (names.length === 0) return "No available waiver options identified.";
+  return `Best available options: ${new Intl.ListFormat("en", { style: "long", type: "conjunction" }).format(names)}.`;
 }
 
 function urgency(value: unknown): RecommendationUrgency | null {
@@ -70,6 +72,7 @@ function actionKey(action: RecommendationAction): string {
 export function buildTeamRecommendations(
   team: AnalysisRecord,
   actionableWaiverAnalysis: AnalysisRecord = {},
+  configuration: AnalysisRecord = {},
 ): { actions: RecommendationAction[] } {
   const actions: RecommendationAction[] = [];
   const hasActionableWaiverAnalysis = actionableWaiverAnalysis.available === true;
@@ -86,12 +89,14 @@ export function buildTeamRecommendations(
     for (const [position, rawRow] of Object.entries(slots)) {
       const row = record(rawRow);
       const status = row.status;
+      const isSpecial = position === "DEF" || position === "K";
+      // A single usable kicker or defense is enough; only an actual hole needs action.
+      if (isSpecial && status !== "uncovered") continue;
       if (status === "thin" || (status === "covered" && row.usable != null && Number(row.usable) <= Number(row.required))) {
         coveredThin.add(position);
       }
       const affectedIds = list(row.affected_player_ids).map(String);
-      const specialBye = (position === "DEF" || position === "K") && affectedIds.length > 0;
-      if (status === "thin" && !specialBye) {
+      if (status === "thin") {
         const action: RecommendationAction = {
           category: "depth",
           urgency: "watch",
@@ -108,11 +113,10 @@ export function buildTeamRecommendations(
         }
         continue;
       }
-      if (status !== "uncovered" && !(specialBye && (status === "covered" || status === "thin"))) continue;
-      const rowUrgency = urgency(row.urgency) ?? (specialBye ? "watch" : null);
+      if (status !== "uncovered") continue;
+      const rowUrgency = urgency(row.urgency) ?? (isSpecial && affectedIds.length > 0 ? "watch" : null);
       if (!rowUrgency || readiness.bye_schedule_available !== true) continue;
       const ids = affectedIds;
-      const isSpecial = position === "DEF" || position === "K";
       const category: RecommendationCategory = isSpecial
         ? position === "DEF" ? "def_stream" : "k_stream"
         : ids.length > 0 ? "bye_week" : "lineup_hole";
@@ -120,10 +124,7 @@ export function buildTeamRecommendations(
       const affectedName = ids.length ? playerName(team, ids[0]!) : position;
       let title: string;
       let reason: string;
-      if (isSpecial && status === "covered") {
-        title = `${affectedName} ${position} has a Week ${week} bye`;
-        reason = `A ${position} bye is approaching; confirm the rostered replacement is usable.`;
-      } else if (isSpecial) {
+      if (isSpecial) {
         title = `Add a ${position} for Week ${week}`;
         reason = ids.length
           ? `${affectedName} is on bye and no usable replacement is rostered.`
@@ -137,11 +138,11 @@ export function buildTeamRecommendations(
       }
       if (candidates.length > 0) reason += ` ${candidateNames(candidates)}`;
       else if (!isSpecial && OFFENSE.has(position) && hasActionableWaiverAnalysis) {
-        reason += " No currently usable actionable waiver options are available.";
+        reason += " No available waiver options identified.";
       }
       const action: RecommendationAction = {
         category,
-        urgency: status === "covered" || status === "thin" ? "watch" : rowUrgency,
+        urgency: rowUrgency,
         position_or_slot: position,
         week,
         title,
@@ -181,8 +182,30 @@ export function buildTeamRecommendations(
           position_or_slot: slot,
           week,
           title: `Fill the ${slot} lineup for Week ${week}`,
-          reason: `Your currently usable lineup is short ${required - players.length} ${slot} starting slot(s).`,
+          reason: `You are short ${required - players.length} availability-eligible ${slot} starter(s). Bye-week coverage is unknown.`,
           related_player_ids: players.map((player) => String(player.player_id ?? "")).filter(Boolean),
+        });
+      }
+      // K/DEF are deliberately outside the offensive optimizer. Their current
+      // availability can still reveal a hole when bye-week data is unavailable.
+      for (const position of ["K", "DEF"]) {
+        const required = Number(record(coverage[position]).required ?? 0);
+        if (required <= 0) continue;
+        const usableIds = new Set(
+          list(record(team.availability).players)
+            .filter((player) => player.position === position && player.currently_usable === true)
+            .map((player) => String(player.player_id ?? ""))
+            .filter(Boolean),
+        );
+        if (usableIds.size >= required) continue;
+        actions.push({
+          category: position === "DEF" ? "def_stream" : "k_stream",
+          urgency: "act_now",
+          position_or_slot: position,
+          week,
+          title: `Add a ${position} for Week ${week}`,
+          reason: `You are short ${required - usableIds.size} availability-eligible ${position} starter(s). Bye-week coverage is unknown.`,
+          related_player_ids: [...usableIds],
         });
       }
     }
@@ -210,6 +233,18 @@ export function buildTeamRecommendations(
     });
   }
 
+  // Each action is an alternative evaluated against the original roster, not a sequence of drops.
+  const urgentAdds = actions.filter((action) => action.urgency === "act_now" && ["lineup_hole", "bye_week", "k_stream", "def_stream"].includes(action.category));
+  if (urgentAdds.length > 0) {
+    const drop = recommendSafeDrop(team, configuration);
+    for (const action of urgentAdds) {
+      action.recommended_drop = drop;
+      action.reason += drop
+        ? ` Recommended drop: ${drop.name}. ${drop.reason} Evaluate this move on its own before making another add.`
+        : " No clearly safe drop identified.";
+    }
+  }
+
   actions.sort((a, b) => ORDER[a.urgency] - ORDER[b.urgency] || (a.week ?? 0) - (b.week ?? 0) || String(a.position_or_slot).localeCompare(String(b.position_or_slot)));
   return { actions };
 }
@@ -224,6 +259,7 @@ export function addRecommendations(
     team.recommendations = buildTeamRecommendations(
       team,
       rosterId === String(myRosterId) ? actionableWaiverAnalysis : {},
+      record(fantasyAnalysis.roster_configuration),
     ) as unknown as AnalysisRecord;
   }
 }

@@ -1,6 +1,8 @@
 import { Badge } from "@/components/ui/badge";
 import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 
+import { needLabel, depthLabel, EXTRA_DEPTH_NOTE, SAFE_TO_MOVE_NOTE, REPLACEMENT_NOTE, AVAILABILITY_LINEUP_NOTE } from "@/lib/sleeper/presentation";
+
 const OFFENSE = ["QB", "RB", "WR", "TE"] as const;
 const AVAILABILITY_LABELS: Record<string, string> = {
   active: "Active",
@@ -95,7 +97,7 @@ function replacementText(row: AnalysisRecord | undefined): string {
   if (!row) return "—";
   const level = display(row.replacement_cost);
   const replacement = row.replacement_player == null ? "none" : String(row.replacement_player);
-  return `${level} · ${replacement}`;
+  return `${display(row.score_difference)} rating drop (${level}) · replacement: ${replacement}`;
 }
 
 function urgencyVariant(value: unknown) {
@@ -218,8 +220,8 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
               {OFFENSE.map((position) => (
                 <li key={position} className="flex flex-wrap items-center gap-x-2">
                   <span className="w-7 font-medium">{position}</span>
-                  <span className="text-muted-foreground">Structural: {display(record(team.position_need && record(team.position_need)[position]).need)}</span>
-                  <span className="text-muted-foreground">· Usable: {display(record(usableNeed[position]).need)}</span>
+                  <span className="text-muted-foreground">All roster: {needLabel(record(team.position_need && record(team.position_need)[position]).need)}</span>
+                  <span className="text-muted-foreground">· Available players: {needLabel(record(usableNeed[position]).need)}</span>
                 </li>
               ))}
             </ul>
@@ -237,21 +239,23 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
                 <li key={position} className="flex flex-wrap items-center gap-x-2">
                   <span className="w-7 font-medium">{position}</span>
                   <span className="text-muted-foreground">
-                    Structural: {display(record(structuralStrength[position]).rating)} / {display(record(structuralDepth[position]).starting_depth)}
+                    All roster: {display(record(structuralStrength[position]).rating)} / {depthLabel(record(structuralDepth[position]).starting_depth)}
                   </span>
                   <span className="text-muted-foreground">
-                    · Usable: {display(record(usableStrength[position]).rating)} / {display(record(usableDepth[position]).starting_depth)}
+                    · Available players: {display(record(usableStrength[position]).rating)} / {depthLabel(record(usableDepth[position]).starting_depth)}
                   </span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <Lineup title="Structural Optimal Lineup" lineup={structuralLineup} coverage={coverage} />
-          <Lineup title="Currently Usable Lineup" lineup={usableLineup} coverage={coverage} />
+          <Lineup title="Best Lineup (All Roster)" lineup={structuralLineup} coverage={coverage} />
+          <Lineup title="Availability-Eligible Lineup" lineup={usableLineup} coverage={coverage} />
+          <p className="text-xs text-muted-foreground">{AVAILABILITY_LINEUP_NOTE}</p>
 
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Replacement Risk</p>
+            <p className="mt-1 text-xs text-muted-foreground">{REPLACEMENT_NOTE}</p>
             {costRows.size === 0 ? (
               <p className="mt-1 text-muted-foreground">No replacement-cost rows.</p>
             ) : (
@@ -259,8 +263,8 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
                 {[...costRows.values()].map(({ player, structural, usable }, index) => (
                   <li key={String(player.player_id ?? `${player.name}-${index}`)} className="min-w-0">
                     <span className="font-medium">{String(player.name ?? player.player_id ?? "Unknown player")}</span>
-                    <span className="ml-2 text-muted-foreground">Structural: {replacementText(structural)}</span>
-                    <span className="ml-2 text-muted-foreground">· Usable: {replacementText(usable)}</span>
+                    <span className="ml-2 text-muted-foreground">All roster: {replacementText(structural)}</span>
+                    <span className="ml-2 text-muted-foreground">· Available players: {replacementText(usable)}</span>
                   </li>
                 ))}
               </ul>
@@ -287,7 +291,8 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Structural Surplus</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Extra Depth (All Roster)</p>
+              <p className="mt-1 text-xs text-muted-foreground">{EXTRA_DEPTH_NOTE}</p>
               <p className="mt-1 text-muted-foreground">
                 {structuralSurplus.length > 0
                   ? structuralSurplus.slice(0, 4).map((player) => `${player.name} (${player.position})`).join(", ")
@@ -295,7 +300,8 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
               </p>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Actionable Surplus</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Safe to Move (Available Players)</p>
+              <p className="mt-1 text-xs text-muted-foreground">{SAFE_TO_MOVE_NOTE}</p>
               <p className="mt-1 text-muted-foreground">
                 {actionableSurplus.length > 0
                   ? actionableSurplus.slice(0, 4).map((player) => `${player.name} (${player.position})`).join(", ")

@@ -3,6 +3,7 @@ import { buildAnalysisBundle, buildMarkdown, jsonFilename, markdownFilename, pla
 import { deriveByeWeeksFromSchedule } from "./analysis/future-readiness.ts";
 import { loadAlexandriaWeeklyContext } from "./analysis/weekly-context.server.ts";
 import type { PlayerIdentity } from "./analysis/weekly-context.ts";
+import { mapStarterIdsToSlots } from "./starter-slot-mapping.ts";
 import type {
   LeagueSnapshot,
   LeagueTransaction,
@@ -266,14 +267,14 @@ export async function loadLeagueSnapshot(
 
   const teams: TeamRoster[] = rosters.map((roster) => {
     const owner = roster.owner_id ? usersById.get(roster.owner_id) : undefined;
-    const starterIds = (roster.starters ?? []).map(String).filter((playerId) => playerId !== "0");
-    const starterSet = new Set(starterIds);
+    const starterAssignments = mapStarterIdsToSlots(roster.starters ?? [], starterSlots);
+    const starterSet = new Set(starterAssignments.map(({ playerId }) => playerId));
     const reserveIds = (roster.reserve ?? []).map(String);
     const taxiIds = (roster.taxi ?? []).map(String);
     const heldOut = new Set([...starterSet, ...reserveIds, ...taxiIds]);
 
-    const starters = starterIds
-      .map((playerId, index) => toSlot(playerId, starterSlots[index] ?? `S${index + 1}`, players))
+    const starters = starterAssignments
+      .map(({ playerId, slot }) => toSlot(playerId, slot, players))
       .filter((slot): slot is PlayerSlot => slot !== null);
 
     const bench = (roster.players ?? [])
@@ -413,7 +414,7 @@ export async function loadLeagueSnapshot(
     "Waiver/free-agent players are derived from players not currently rostered.",
     "Inactive and invalid database entries are filtered from the primary waiver pool.",
     "Points use Sleeper's fpts + fpts_decimal / 100 (not the decimal field alone).",
-    "Fantasy analysis is the V3.3 configuration-driven model. snapshot_version stays 3.2 for compatibility.",
+    "Fantasy analysis uses the V3.3 structural model, V3.4 availability analysis, and V3.5 future-readiness and recommendation layers. snapshot_version stays 3.2 for compatibility.",
     "Meaningful players are elite, strong, or useful (search rank 1-250). K, DEF, and IDP are outside the offensive optimizer.",
     "Waiver analysis ranks QB, RB, WR, and TE only, using configuration-aware team need and league scarcity.",
   ];

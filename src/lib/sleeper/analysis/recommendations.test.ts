@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { AnalysisRecord } from "./engine.ts";
 import { addRecommendations, buildTeamRecommendations } from "./recommendations.ts";
+import { buildFantasyAnalysis, parseRosterConfiguration } from "./engine.ts";
+import { addFutureReadiness } from "./future-readiness.ts";
 
 function fixture(options: {
   weeks?: Record<string, Record<string, AnalysisRecord>>;
@@ -47,6 +49,89 @@ function row(status: string, urgency: string, affected: string[] = [], extra: An
 }
 
 const actionable = (...candidates: AnalysisRecord[]): AnalysisRecord => ({ available: true, candidates });
+
+describe("V3.5.1 candidate-list prose", () => {
+  for (const [names, expected] of [
+    [[], "No available waiver options identified."],
+    [["Kyler Murray"], "Best available options: Kyler Murray."],
+    [["Kyler Murray", "C.J. Stroud"], "Best available options: Kyler Murray and C.J. Stroud."],
+    [["Kyler Murray", "C.J. Stroud", "Fernando Mendoza", "Fourth QB"], "Best available options: Kyler Murray, C.J. Stroud, and Fernando Mendoza."],
+  ] as [string[], string][]) {
+    it(`formats ${names.length} candidates naturally`, () => {
+      const { team } = fixture({ weeks: { "6": { QB: row("uncovered", "act_now") } } });
+      const candidates = names.map((name, i) => ({ player_id: String(i), name, position: "QB", currently_usable: true }));
+      const action = buildTeamRecommendations(team, actionable(...candidates)).actions[0]!;
+      assert.ok(action.reason.includes(expected));
+      assert.ok(!action.reason.includes("Fourth QB"));
+    });
+  }
+});
+
+function specialTeam(position: string, players: AnalysisRecord[], byes: Record<string, number[]> = {}, scheduleAvailable = true, required = 1): AnalysisRecord {
+  const configuration = parseRosterConfiguration(Array(required).fill(position));
+  const analysis = buildFantasyAnalysis({
+    "1": { team_name: "Fixture", players: players.map((player) => ({ position, status: "Active", team: "BUF", ...player })), starters: [], reserve: [], taxi: [] },
+  }, configuration);
+  addFutureReadiness(analysis, configuration, {
+    currentWeek: 5, regularSeasonEndWeek: 18, byeWeeksByTeam: byes, byeScheduleAvailable: scheduleAvailable,
+  });
+  return (analysis.teams as Record<string, AnalysisRecord>)["1"]!;
+}
+
+describe("V3.5.1 K/DEF recommendations", () => {
+  for (const position of ["K", "DEF"]) {
+    it(`${position}: suppresses healthy single-player thin warnings and covered byes`, () => {
+      const healthy = specialTeam(position, [{ player_id: "starter" }]);
+      assert.deepEqual(buildTeamRecommendations(healthy).actions, []);
+      const covered = specialTeam(position, [{ player_id: "starter" }, { player_id: "backup", team: "NYJ" }], { BUF: [6] });
+      assert.deepEqual(buildTeamRecommendations(covered).actions, []);
+    });
+
+    it(`${position}: preserves uncovered-bye urgency across the horizon`, () => {
+      for (const [week, urgency] of [[5, "act_now"], [6, "act_now"], [7, "plan_ahead"], [8, "watch"], [9, "watch"]] as const) {
+        const team = specialTeam(position, [{ player_id: "starter" }], { BUF: [week] });
+        const actions = buildTeamRecommendations(team).actions;
+        assert.equal(actions.length, 1);
+        assert.equal(actions[0]?.week, week);
+        assert.equal(actions[0]?.urgency, urgency);
+        assert.equal(actions[0]?.category, position === "K" ? "k_stream" : "def_stream");
+      }
+    });
+
+    it(`${position}: alerts for an unavailable player with and without schedule data`, () => {
+      for (const scheduleAvailable of [true, false]) {
+        const team = specialTeam(position, [{ player_id: "starter", injury_status: "Out" }], {}, scheduleAvailable);
+        const actions = buildTeamRecommendations(team).actions;
+        assert.equal(actions[0]?.week, 5);
+        assert.equal(actions[0]?.urgency, "act_now");
+        assert.equal(actions[0]?.category, position === "K" ? "k_stream" : "def_stream");
+        if (!scheduleAvailable) assert.equal(actions.length, 1);
+      }
+    });
+
+    it(`${position}: missing schedule does not invent byes or demand a healthy backup`, () => {
+      const team = specialTeam(position, [{ player_id: "starter" }], {}, false);
+      assert.deepEqual(buildTeamRecommendations(team).actions, []);
+      const covered = specialTeam(position, [{ player_id: "starter", injury_status: "Out" }, { player_id: "backup", team: "NYJ" }], {}, false);
+      assert.deepEqual(buildTeamRecommendations(covered).actions, []);
+    });
+
+    it(`${position}: missing-schedule fallback respects required slot counts`, () => {
+      assert.deepEqual(buildTeamRecommendations(specialTeam(position, [], {}, false, 0)).actions, []);
+      assert.equal(buildTeamRecommendations(specialTeam(position, [], {}, false)).actions.length, 1);
+      const twoRequired = specialTeam(position, [{ player_id: "starter" }], {}, false, 2);
+      assert.equal(buildTeamRecommendations(twoRequired).actions.length, 1);
+    });
+  }
+
+  it("preserves offensive thin-depth recommendations", () => {
+    const { team } = fixture({ weeks: { "5": { RB: row("thin", "watch"), K: row("thin", "watch"), DEF: row("thin", "watch") } } });
+    const actions = buildTeamRecommendations(team).actions;
+    assert.equal(actions.length, 1);
+    assert.equal(actions[0]?.position_or_slot, "RB");
+    assert.equal(actions[0]?.category, "depth");
+  });
+});
 
 describe("V3.5 Phase 2 recommendations", () => {
   it("marks an immediate uncovered TE as act_now", () => {
@@ -104,7 +189,7 @@ describe("V3.5 Phase 2 recommendations", () => {
     const before = structuredClone(candidates);
     const { team } = fixture({ weeks: { "6": { TE: row("uncovered", "act_now", ["laporta"]) } }, positions: { TE: [{ player_id: "laporta", name: "LaPorta" }] } });
     const action = buildTeamRecommendations(team, actionable(...candidates)).actions[0]!;
-    assert.match(action.reason, /Oronde Gadsden and Hunter Henry and Third TE/);
+    assert.match(action.reason, /Oronde Gadsden, Hunter Henry, and Third TE/);
     assert.deepEqual(candidates, before);
     assert.deepEqual(action.related_player_ids, ["laporta", "a", "b", "c"]);
   });
@@ -113,7 +198,7 @@ describe("V3.5 Phase 2 recommendations", () => {
     const { team } = fixture({ weeks: { "6": { QB: row("uncovered", "act_now") } } });
     const action = buildTeamRecommendations(team, actionable({ name: "Unavailable QB", position: "QB", currently_usable: false })).actions[0]!;
     assert.doesNotMatch(action.reason, /Unavailable QB/);
-    assert.match(action.reason, /No currently usable actionable waiver options/);
+    assert.match(action.reason, /No available waiver options identified/);
   });
 
   it("consolidates duplicate same-slot same-week entries", () => {

@@ -114,10 +114,10 @@ function markdown(): { text: string; snapshot: LeagueSnapshot } {
 describe("V3.4 Fantasy Analysis Markdown", () => {
   it("pairs structural and usable scarcity, need, and strength/depth", () => {
     const { text } = markdown();
-    assert.match(text, /### League Scarcity[\s\S]*QB: structural [a-z_]+ · usable [a-z_]+/);
-    assert.match(text, /RB: structural low · usable moderate/);
-    assert.match(text, /#### Position Need[\s\S]*RB: structural moderate · usable thin/);
-    assert.match(text, /#### Strength & Depth[\s\S]*RB: structural [^\n]+ · usable [^\n]+/);
+    assert.match(text, /### League Scarcity[\s\S]*QB: all roster: [^\n]+ · available players: [^\n]+/);
+    assert.match(text, /RB: all roster: Plentiful league depth · available players: Limited league depth/);
+    assert.match(text, /#### Position Need[\s\S]*RB: all roster: Some need · available players: Could use depth/);
+    assert.match(text, /#### Strength & Depth[\s\S]*RB: all roster: [^\n]+ · available players: [^\n]+/);
   });
 
   it("lists unusable players but leaves Questionable players out of unavailable roster output", () => {
@@ -130,10 +130,13 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
 
   it("shows separate structural and usable lineups, preserving unavailable structural selections and empty slots", () => {
     const { text, snapshot: data } = markdown();
-    assert.match(text, /#### Structural Optimal Lineup/);
-    assert.match(text, /#### Currently Usable Lineup/);
-    const structural = text.split("#### Structural Optimal Lineup")[1]?.split("#### Currently Usable Lineup")[0] ?? "";
-    const usable = text.split("#### Currently Usable Lineup")[1]?.split("\*\*Protect\*\*")[0] ?? "";
+    assert.match(text, /#### Best Lineup \(All Roster\)/);
+    assert.match(text, /#### Availability-Eligible Lineup/);
+    assert.match(text, /bye weeks are not excluded/);
+    assert.match(text, /week-specific gaps, including byes/);
+    assert.doesNotMatch(text, /Currently Usable Lineup/);
+    const structural = text.split("#### Best Lineup (All Roster)")[1]?.split("#### Availability-Eligible Lineup")[0] ?? "";
+    const usable = text.split("#### Availability-Eligible Lineup")[1]?.split("\*\*Protect\*\*")[0] ?? "";
     assert.match(structural, /Josh Jacobs/);
     assert.doesNotMatch(usable, /Josh Jacobs|Jadarian Price|A\.J\. Brown/);
     assert.match(usable, /Empty/);
@@ -145,16 +148,26 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
   it("pairs replacement risk and protects unavailable players with availability context", () => {
     const { text } = markdown();
     assert.match(text, /#### Replacement Risk/);
-    assert.match(text, /\| Player \| Structural Loss \| Structural Replacement \| Usable Loss \| Usable Replacement \|/);
+    assert.match(text, /\| Player \| Lineup-Rating Drop \(All Roster\) \| Replacement \(All Roster\) \| Lineup-Rating Drop \(Available Players\) \| Replacement \(Available Players\) \|/);
     assert.match(text, /\| Josh Jacobs \| [^|]+ \| none \| — \| — \|/);
     assert.match(text, /\*\*Protect\*\*[\s\S]*A\.J\. Brown[^\n]*IR \/ unavailable/);
   });
 
   it("keeps structural and actionable surplus separate", () => {
     const { text } = markdown();
-    assert.match(text, /#### Structural Surplus/);
-    assert.match(text, /#### Actionable Surplus/);
+    assert.match(text, /#### Extra Depth \(All Roster\)/);
+    assert.match(text, /#### Safe to Move \(Available Players\)/);
     assert.match(text, /Josh Jacobs/);
+  });
+
+  it("explains display labels without mutating engine fields or waiver ordering", () => {
+    const data = snapshot();
+    const before = structuredClone(data);
+    const text = buildMarkdown(data);
+    assert.doesNotMatch(text, /actionable surplus|structural surplus|usable loss|structural loss/i);
+    assert.match(text, /rating units, not projected fantasy points/);
+    assert.match(text, /this is not a drop recommendation/);
+    assert.deepEqual(data, before);
   });
 
   it("renders engine recommendations near the top of the fantasy analysis", () => {
@@ -289,18 +302,38 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
 
   it("prioritizes actionable waivers while retaining structural context and the raw pool", () => {
     const { text, snapshot: data } = markdown();
-    const actionable = text.split("### Actionable Recommendations")[1]?.split("### Structural Context")[0] ?? "";
+    const actionable = text.split("### Available Waiver Options")[1]?.split("### All-Player Context")[0] ?? "";
     assert.match(text, /## Waiver Analysis/);
     assert.match(actionable, /Questionable WR[^\n]*Questionable/);
     assert.doesNotMatch(actionable, /Baker Mayfield/);
     const structural = data.waiverAnalysis.candidates as AnalysisRecord[];
     assert.ok(structural.some((candidate) => candidate.name === "Baker Mayfield"));
-    assert.match(text, /Structural waiver analysis retains \d+ candidate\(s\) and may include currently unavailable players/);
+    assert.match(text, /All-player waiver rankings include \d+ candidate\(s\), including currently unavailable players/);
     assert.match(text, /## Available Waiver \/ Free-Agent Players/);
     assert.match(text, /## Standings/);
     assert.match(text, /## Rosters/);
     assert.match(text, /## Recent Transactions/);
     assert.match(text, /## Matchups/);
     assert.match(text, /## Data Notes/);
+  });
+});
+
+describe("priority waiver presentation", () => {
+  it("shows urgent QB options ahead of stronger generic TE/RB rankings without changing raw data", () => {
+    const data = snapshot();
+    const team = (data.fantasyAnalysis.teams as Record<string, AnalysisRecord>)["1"]!;
+    team.recommendations = { actions: [{ urgency: "act_now", category: "lineup_hole", position_or_slot: "QB", week: 6, title: "Add a QB", reason: "No starter available." }] };
+    data.actionableWaiverAnalysis = { available: true, team: "Example Team", candidates: [
+      { player_id: "te", name: "Strong TE", position: "TE", waiver_value_score: 100 },
+      { player_id: "rb", name: "Strong RB", position: "RB", waiver_value_score: 90 },
+      { player_id: "qb", name: "Kyler Murray", position: "QB", waiver_value_score: 60 },
+    ] };
+    const before = structuredClone(data);
+    const text = buildMarkdown(data);
+    const section = text.slice(text.indexOf("## Waiver Analysis"));
+    assert.ok(section.indexOf("Priority Need: QB for Week 6") < section.indexOf("Other Waiver Opportunities"));
+    assert.ok(section.indexOf("1. Kyler Murray") < section.indexOf("Strong TE"));
+    assert.ok(section.indexOf("Strong TE") < section.indexOf("Strong RB"));
+    assert.deepEqual(data, before);
   });
 });
