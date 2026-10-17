@@ -1,3 +1,4 @@
+import { selectPriorityCandidates } from "./priority-candidates.ts";
 import { getSlotEligiblePositions, type AnalysisRecord } from "./analysis/engine.ts";
 import { assessAvailability } from "./analysis/availability.ts";
 import type { LeagueSnapshot } from "./types.ts";
@@ -19,7 +20,6 @@ export function priorityWaiverGroups(snapshot: Pick<LeagueSnapshot, "fantasyAnal
   if (!Array.isArray(actions)) return [];
   const configuration = (analysis.roster_configuration ?? {}) as AnalysisRecord;
   const waiver = snapshot.actionableWaiverAnalysis;
-  const offense = waiver?.available && Array.isArray(waiver.candidates) ? waiver.candidates as AnalysisRecord[] : [];
   const groups: PriorityWaiverGroup[] = [];
   const seen = new Set<string>();
   for (const action of actions as AnalysisRecord[]) {
@@ -37,8 +37,10 @@ export function priorityWaiverGroups(snapshot: Pick<LeagueSnapshot, "fantasyAnal
         .map((player) => ({ player_id: player.playerId, name: player.name, position: player.position, team: player.nflTeam,
           ...assessAvailability({ position: player.position, status: player.status, injury_status: player.injuryStatus }),
         }))
-      : offense;
-    const candidates = source.filter((player) => eligible.includes(String(player.position)) && player.currently_usable !== false && player.availability !== "unavailable" && player.availability !== "unknown").slice(0, 3);
+      : [];
+    const candidates = slot === "K" || slot === "DEF"
+      ? source.filter((player) => eligible.includes(String(player.position)) && player.currently_usable !== false && player.availability !== "unavailable" && player.availability !== "unknown").slice(0, 3)
+      : selectPriorityCandidates(waiver ?? {}, slot, week, configuration, (analysis.priority_bye_schedule ?? {}) as AnalysisRecord);
     groups.push({ title: `Priority Need: ${slot}${week === null ? "" : ` for Week ${week}`}`, slot, week, candidates });
   }
   return groups;

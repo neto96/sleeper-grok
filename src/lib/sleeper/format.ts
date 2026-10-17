@@ -1,3 +1,4 @@
+import { targetWeekCandidates } from "./priority-candidates.ts";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "./priority-waivers.ts";
 import { needLabel, depthLabel, scarcityLabel, EXTRA_DEPTH_NOTE, SAFE_TO_MOVE_NOTE, REPLACEMENT_NOTE, AVAILABILITY_LINEUP_NOTE } from "./presentation.ts";
 import { FANTASY_POSITIONS } from "./constants.ts";
@@ -134,8 +135,34 @@ export function presentActionableWaiverAnalysis(
   myRosterId: number,
 ): AnalysisRecord {
   const full = buildActionableWaiverAnalysis(waiverPool, fantasyAnalysis, myRosterId);
-  const candidates = Array.isArray(full.candidates) ? full.candidates.slice(0, WAIVER_ANALYSIS_EXPORT_LIMIT) : [];
-  return { ...full, candidates };
+  const ranked = Array.isArray(full.candidates) ? full.candidates as AnalysisRecord[] : [];
+  const candidates = ranked.slice(0, WAIVER_ANALYSIS_EXPORT_LIMIT);
+  // Keep three options per position before the global export cap can hide a need.
+  // Filtering the ranked list preserves scores and ordering, including FLEX options.
+  const counts = new Map<string, number>();
+  const positional_candidates = ranked.filter((candidate) => {
+    const position = String(candidate.position);
+    const count = counts.get(position) ?? 0;
+    counts.set(position, count + 1);
+    return count < 3;
+  });
+  const schedule = (fantasyAnalysis.priority_bye_schedule ?? {}) as AnalysisRecord;
+  const target_week_candidates: Record<string, AnalysisRecord[]> = {};
+  const start = Number(schedule.start_week);
+  const end = Number(schedule.end_week);
+  if (Number.isInteger(start) && Number.isInteger(end) && start >= 1 && end <= 18) {
+    for (let week = start; week <= end; week += 1) {
+      const perPosition = new Map<string, number>();
+      // Filter BEFORE selecting three, so a fourth-ranked non-bye player can fill in.
+      target_week_candidates[String(week)] = targetWeekCandidates(ranked, week, schedule).filter(player => {
+        const position = String(player.position);
+        const count = perPosition.get(position) ?? 0;
+        perPosition.set(position, count + 1);
+        return count < 3;
+      });
+    }
+  }
+  return { ...full, candidates, positional_candidates, target_week_candidates };
 }
 
 export function buildAnalysisBundle(
@@ -165,7 +192,16 @@ export function buildAnalysisBundle(
   }
   const rosterConfiguration = parseRosterConfiguration(rosterPositions);
   const fantasyAnalysis = buildFantasyAnalysis(rosterData, rosterConfiguration);
-  if (futureReadiness) addFutureReadiness(fantasyAnalysis, rosterConfiguration, futureReadiness);
+  if (futureReadiness) {
+    addFutureReadiness(fantasyAnalysis, rosterConfiguration, futureReadiness);
+    const readiness = ((fantasyAnalysis.teams as Record<string, AnalysisRecord>)[String(myRosterId)]?.future_readiness ?? {}) as AnalysisRecord;
+    fantasyAnalysis.priority_bye_schedule = {
+      available: futureReadiness.byeScheduleAvailable,
+      start_week: readiness.horizon_start_week ?? null,
+      end_week: readiness.horizon_end_week ?? null,
+      bye_weeks_by_team: structuredClone(futureReadiness.byeWeeksByTeam),
+    };
+  }
   const analysisWaiverPool = waiverPlayers
     .filter((player) => player.position === "QB" || player.position === "RB" || player.position === "WR" || player.position === "TE")
     .map((player) => ({
@@ -544,7 +580,7 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
   for (const group of priorityGroups) {
     lines.push(`### ${md(group.title)}`, "");
     if (group.candidates.length === 0) lines.push("No available candidates found for this need.");
-    else group.candidates.forEach((player, index) => lines.push(`${index + 1}. ${md(String(player.name))}${player.availability === "uncertain" ? " (Questionable)" : ""}`));
+    else group.candidates.forEach((player, index) => lines.push(`${index + 1}. ${md(String(player.name))}${player.target_week_bye_status === "unknown" ? " (target-week bye status unknown)" : ""}${player.availability === "uncertain" ? " (Questionable)" : ""}`));
     lines.push("", `_${PRIORITY_WAIVER_NOTE}_`, "");
   }
   const waiver = snapshot.actionableWaiverAnalysis;

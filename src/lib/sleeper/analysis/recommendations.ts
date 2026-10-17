@@ -1,3 +1,4 @@
+import { selectPriorityCandidates, UNKNOWN_PRIORITY_BYE_NOTE } from "../priority-candidates.ts";
 import type { AnalysisRecord } from "./engine.ts";
 import { recommendSafeDrop, type RecommendedDrop } from "./recommended-drop.ts";
 
@@ -73,6 +74,7 @@ export function buildTeamRecommendations(
   team: AnalysisRecord,
   actionableWaiverAnalysis: AnalysisRecord = {},
   configuration: AnalysisRecord = {},
+  priorityByeSchedule: AnalysisRecord = {},
 ): { actions: RecommendationAction[] } {
   const actions: RecommendationAction[] = [];
   const hasActionableWaiverAnalysis = actionableWaiverAnalysis.available === true;
@@ -120,7 +122,7 @@ export function buildTeamRecommendations(
       const category: RecommendationCategory = isSpecial
         ? position === "DEF" ? "def_stream" : "k_stream"
         : ids.length > 0 ? "bye_week" : "lineup_hole";
-      const candidates = OFFENSE.has(position) ? waiverCandidates(actionableWaiverAnalysis, position) : [];
+      const candidates = OFFENSE.has(position) ? selectPriorityCandidates(actionableWaiverAnalysis, position, week, configuration, priorityByeSchedule) : [];
       const affectedName = ids.length ? playerName(team, ids[0]!) : position;
       let title: string;
       let reason: string;
@@ -131,12 +133,15 @@ export function buildTeamRecommendations(
           : `No usable ${position} is available for the required Week ${week} slot.`;
       } else if (ids.length) {
         title = `${rowUrgency === "act_now" ? "Add" : "Plan for"} a ${position} for Week ${week}`;
-        reason = `${affectedName} is unavailable that week and no usable replacement is rostered.`;
+        reason = `${affectedName} is on bye and no usable replacement is rostered.`;
       } else {
         title = `${rowUrgency === "act_now" ? "Add" : "Plan for"} a ${position} for Week ${week}`;
         reason = String(row.reason ?? `No usable ${position} is available for Week ${week}.`);
       }
-      if (candidates.length > 0) reason += ` ${candidateNames(candidates)}`;
+      if (candidates.length > 0) {
+        reason += ` ${candidateNames(candidates)}`;
+        if (candidates.some(candidate => candidate.target_week_bye_status === "unknown")) reason += ` ${UNKNOWN_PRIORITY_BYE_NOTE}`;
+      }
       else if (!isSpecial && OFFENSE.has(position) && hasActionableWaiverAnalysis) {
         reason += " No available waiver options identified.";
       }
@@ -260,6 +265,7 @@ export function addRecommendations(
       team,
       rosterId === String(myRosterId) ? actionableWaiverAnalysis : {},
       record(fantasyAnalysis.roster_configuration),
+      record(fantasyAnalysis.priority_bye_schedule),
     ) as unknown as AnalysisRecord;
   }
 }

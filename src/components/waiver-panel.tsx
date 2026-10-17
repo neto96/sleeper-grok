@@ -137,7 +137,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
             <h3 className="font-medium">{group.title}</h3>
             {group.candidates.length > 0 ? (
               <ol className="mt-2 list-inside list-decimal space-y-1 text-sm">
-                {group.candidates.map((player) => <li key={String(player.player_id)}>{String(player.name)}{player.availability === "uncertain" ? " (Questionable)" : ""}</li>)}
+                {group.candidates.map((player) => <li key={String(player.player_id)}>{String(player.name)}{player.target_week_bye_status === "unknown" ? " (target-week bye status unknown)" : ""}{player.availability === "uncertain" ? " (Questionable)" : ""}</li>)}
               </ol>
             ) : <p className="mt-2 text-sm text-muted-foreground">No available candidates found for this need.</p>}
             <p className="mt-2 text-xs text-muted-foreground">{PRIORITY_WAIVER_NOTE}</p>

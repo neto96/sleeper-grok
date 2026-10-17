@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildMarkdown, buildAnalysisBundle } from "./format.ts";
+import { buildMarkdown, buildAnalysisBundle, applyMyRoster } from "./format.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types.ts";
-import type { AnalysisRecord } from "./analysis/engine.ts";
+import { buildActionableWaiverAnalysis, type AnalysisRecord } from "./analysis/engine.ts";
+import { priorityWaiverGroups } from "./priority-waivers.ts";
 
 function player(
   playerId: string,
@@ -336,4 +337,63 @@ describe("priority waiver presentation", () => {
     assert.ok(section.indexOf("Strong TE") < section.indexOf("Strong RB"));
     assert.deepEqual(data, before);
   });
+});
+
+it("retains Week 7 RB need options beyond the global top 40 without future-week context", () => {
+  const data = snapshot();
+  const roster = data.teams[0]!;
+  const waivers: WaiverPlayer[] = [
+    ...Array.from({ length: 45 }, (_, i) => ({ playerId: `te-${i}`, name: `TE ${i}`, position: "TE", nflTeam: "BUF", status: "Active", injuryStatus: null, searchRank: i + 1 })),
+    ...Array.from({ length: 4 }, (_, i) => ({ playerId: `rb-${i}`, name: `Available RB ${i}`, position: "RB", nflTeam: "BUF", status: "Active", injuryStatus: i === 1 ? "Questionable" : null, searchRank: 900 + i })),
+    { playerId: "out-rb", name: "Out RB", position: "RB", nflTeam: "BUF", status: "Active", injuryStatus: "Out", searchRank: 1 },
+  ];
+  const bundle = buildAnalysisBundle([roster], [1], data.rosterSlots, waivers, 1, {
+    currentWeek: 6, regularSeasonEndWeek: 18, byeScheduleAvailable: true, byeWeeksByTeam: { TST: [7] },
+  });
+  const full = buildActionableWaiverAnalysis(bundle.analysisWaiverPool, bundle.fantasyAnalysis, 1).candidates as AnalysisRecord[];
+  assert.deepEqual(bundle.actionableWaiverAnalysis.candidates, full.slice(0, 40));
+  assert.ok(!(bundle.actionableWaiverAnalysis.candidates as AnalysisRecord[]).some(p => p.position === "RB"));
+  const updated = { ...data, ...bundle, waiverByPosition: { RB: waivers.filter(p => p.position === "RB") } };
+  const legacy = { ...updated, actionableWaiverAnalysis: { ...bundle.actionableWaiverAnalysis } };
+  delete legacy.actionableWaiverAnalysis.positional_candidates;
+  delete legacy.actionableWaiverAnalysis.target_week_candidates;
+  assert.deepEqual(priorityWaiverGroups(legacy).find(g => g.slot === "RB" && g.week === 7)?.candidates, []);
+  const group = priorityWaiverGroups(updated).find(g => g.slot === "RB" && g.week === 7)!;
+  assert.deepEqual(group.candidates.map(({ target_week_bye_status, ...p }) => p), full.filter(p => p.position === "RB").slice(0, 3));
+  assert.deepEqual(group.candidates.map(p => p.name), ["Available RB 0", "Available RB 1", "Available RB 2"]);
+  const team = (bundle.fantasyAnalysis.teams as Record<string, AnalysisRecord>)["1"]!;
+  const action = ((team.recommendations as AnalysisRecord).actions as AnalysisRecord[]).find(a => a.position_or_slot === "RB" && a.week === 7)!;
+  assert.match(String(action.reason), /is on bye/);
+  assert.doesNotMatch(String(action.reason), /unavailable that week|No available waiver options/);
+  assert.match(String(action.reason), /Available RB 0, Available RB 1, and Available RB 2/);
+  assert.match(buildMarkdown(updated), /Priority Need: RB for Week 7\n\n1\. Available RB 0 \(target-week bye status unknown\)/);
+  assert.match(String(action.reason), /Target-week bye status is unknown/);
+  const switched = applyMyRoster(updated, 1);
+  assert.deepEqual(priorityWaiverGroups(switched), priorityWaiverGroups(updated));
+  assert.deepEqual(switched.actionableWaiverAnalysis?.candidates, full.slice(0, 40));
+});
+
+it("carries reliable target-week byes from snapshot construction into priority prose, Markdown and roster refresh", () => {
+  const data = snapshot();
+  const waivers: WaiverPlayer[] = [
+    { playerId: "bye-rb", name: "Bye RB", position: "RB", nflTeam: "BYE", status: "Active", injuryStatus: null, searchRank: 1 },
+    { playerId: "ready-rb", name: "Ready RB", position: "RB", nflTeam: "BUF", status: "Active", injuryStatus: null, searchRank: 10 },
+  ];
+  const bundle = buildAnalysisBundle(data.teams, [1], data.rosterSlots, waivers, 1, {
+    currentWeek: 6, regularSeasonEndWeek: 18, byeScheduleAvailable: true, byeWeeksByTeam: { TST: [7], BYE: [7], BUF: [8] },
+  });
+  const updated = { ...data, ...bundle };
+  for (const view of [updated, applyMyRoster(updated, 1)]) {
+    const group = priorityWaiverGroups(view).find(g => g.slot === "RB" && g.week === 7)!;
+    assert.deepEqual(group.candidates.map(p => p.player_id), ["ready-rb"]);
+    const team = (view.fantasyAnalysis.teams as Record<string, AnalysisRecord>)["1"]!;
+    const action = ((team.recommendations as AnalysisRecord).actions as AnalysisRecord[]).find(a => a.position_or_slot === "RB" && a.week === 7)!;
+    assert.match(String(action.reason), /is on bye/);
+    assert.match(String(action.reason), /Best available options: Ready RB/);
+    assert.doesNotMatch(String(action.reason), /Bye RB|bye status is unknown/);
+    const section = buildMarkdown(view).split("### Priority Need: RB for Week 7")[1]!.split("###")[0]!;
+    assert.match(section, /1\. Ready RB/);
+    assert.doesNotMatch(section, /Bye RB|bye status unknown/);
+    assert.deepEqual((view.actionableWaiverAnalysis!.candidates as AnalysisRecord[]).map(p => p.player_id), ["bye-rb", "ready-rb"]);
+  }
 });
