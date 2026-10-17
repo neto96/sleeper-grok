@@ -1,3 +1,4 @@
+import { APP_VERSION } from "./release.ts";
 import { targetWeekCandidates } from "./priority-candidates.ts";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "./priority-waivers.ts";
 import { needLabel, depthLabel, scarcityLabel, EXTRA_DEPTH_NOTE, SAFE_TO_MOVE_NOTE, REPLACEMENT_NOTE, AVAILABILITY_LINEUP_NOTE } from "./presentation.ts";
@@ -477,6 +478,7 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
   lines.push("");
   lines.push("Sleeper league snapshot formatted for an LLM.");
   lines.push("");
+  lines.push(`- Analysis version: V${APP_VERSION}`);
   lines.push(`- League: ${snapshot.leagueName}`);
   lines.push(`- League ID: \`${snapshot.leagueId}\``);
   lines.push(`- Season: ${snapshot.season} ${snapshot.sport.toUpperCase()} ${snapshot.seasonType} season`);

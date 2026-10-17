@@ -1,7 +1,8 @@
+import { APP_VERSION, CHANGELOG } from "./release.ts";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { buildMarkdown, buildAnalysisBundle, applyMyRoster } from "./format.ts";
+import { buildMarkdown, buildAnalysisBundle, applyMyRoster, snapshotJson } from "./format.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster, WaiverPlayer } from "./types.ts";
 import { buildActionableWaiverAnalysis, type AnalysisRecord } from "./analysis/engine.ts";
 import { priorityWaiverGroups } from "./priority-waivers.ts";
@@ -396,4 +397,17 @@ it("carries reliable target-week byes from snapshot construction into priority p
     assert.doesNotMatch(section, /Bye RB|bye status unknown/);
     assert.deepEqual((view.actionableWaiverAnalysis!.candidates as AnalysisRecord[]).map(p => p.player_id), ["bye-rb", "ready-rb"]);
   }
+});
+
+
+it("exports the app release separately from snapshot version without the full changelog", () => {
+  const data = snapshot();
+  const text = buildMarkdown(data);
+  assert.equal(APP_VERSION, "3.5.1");
+  assert.ok(text.split("## My Team")[0]!.includes(`- Analysis version: V${APP_VERSION}`));
+  assert.equal(data.snapshotVersion, "3.2");
+  assert.equal(snapshotJson(data).snapshot_version, "3.2");
+  assert.equal(CHANGELOG[0].version, APP_VERSION);
+  assert.deepEqual(CHANGELOG.map(release => release.version), ["3.5.1", "3.5", "3.4", "3.3"]);
+  assert.ok(!text.includes(CHANGELOG[0].changes[0]));
 });

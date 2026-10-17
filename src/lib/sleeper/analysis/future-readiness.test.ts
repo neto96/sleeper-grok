@@ -33,9 +33,9 @@ function week(readiness: AnalysisRecord, number: number): AnalysisRecord {
 }
 
 describe("V3.5 future readiness", () => {
-  it("marks a QB bye uncovered without a backup and covered with a usable backup", () => {
+  it("marks a QB bye uncovered without a backup and thin with a usable backup", () => {
     assert.equal((week(analyze([player("qb", "QB")], ["QB"], options({ BUF: [6] })), 6).QB as AnalysisRecord).status, "uncovered");
-    assert.equal((week(analyze([player("qb", "QB"), player("backup", "QB", { team: "NYJ" })], ["QB"], options({ BUF: [6] })), 6).QB as AnalysisRecord).status, "covered");
+    assert.equal((week(analyze([player("qb", "QB"), player("backup", "QB", { team: "NYJ" })], ["QB"], options({ BUF: [6] })), 6).QB as AnalysisRecord).status, "thin");
   });
 
   it("marks a TE bye uncovered without a backup", () => {
@@ -44,7 +44,7 @@ describe("V3.5 future readiness", () => {
 
   it("keeps Questionable backups usable", () => {
     const readiness = analyze([player("te", "TE"), player("te-q", "TE", { team: "NYJ", injury_status: "Questionable" })], ["TE"], options({ BUF: [6] }));
-    assert.equal((week(readiness, 6).TE as AnalysisRecord).status, "covered");
+    assert.equal((week(readiness, 6).TE as AnalysisRecord).status, "thin");
   });
 
   it("does not let Out, IR, NA, PUP, or DNR backups cover a slot", () => {
@@ -72,6 +72,66 @@ describe("V3.5 future readiness", () => {
     const assignedIds = ["RB", "WR", "TE", "FLEX"].flatMap((key) => (positions[key] as AnalysisRecord).assigned_player_ids as string[]);
     assert.equal(assignedIds.length, 3);
     assert.equal(new Set(assignedIds).size, assignedIds.length);
+  });
+
+  it("allows a spare RB to take FLEX after losing any of three WRs", () => {
+    const readiness = analyze([
+      player("wr1", "WR"), player("wr2", "WR"), player("wr3", "WR"),
+      player("rb1", "RB"), player("rb2", "RB"),
+    ], ["RB", "WR", "WR", "FLEX"]);
+    const positions = week(readiness, 6);
+    assert.deepEqual((positions.FLEX as AnalysisRecord).assigned_player_ids, ["wr3"]);
+    assert.equal((positions.WR as AnalysisRecord).status, "covered");
+    const ids = Object.values(positions).flatMap((row) => (row as AnalysisRecord).assigned_player_ids as string[]);
+    assert.equal(new Set(ids).size, ids.length);
+  });
+
+  it("keeps WR thin when the third WR is indispensable to FLEX", () => {
+    const positions = week(analyze([
+      player("wr1", "WR"), player("wr2", "WR"), player("wr3", "WR"), player("rb1", "RB"),
+    ], ["RB", "WR", "WR", "FLEX"]), 6);
+    assert.equal((positions.WR as AnalysisRecord).status, "thin");
+    assert.equal((positions.WR as AnalysisRecord).urgency, "watch");
+    assert.match(String((positions.WR as AnalysisRecord).reason), /currently covered starting slot/);
+  });
+
+  it("recognizes interchangeable TEs when an RB can fill FLEX", () => {
+    const roster = [player("te1", "TE"), player("te2", "TE"), player("rb1", "RB"), player("rb2", "RB")];
+    const positions = week(analyze(roster, ["RB", "TE", "FLEX"]), 6);
+    assert.equal((positions.TE as AnalysisRecord).status, "covered");
+    assert.equal((week(analyze(roster.slice(0, 3), ["RB", "TE", "FLEX"]), 6).TE as AnalysisRecord).status, "thin");
+  });
+
+  it("keeps real bye and unavailable depth losses visible", () => {
+    const roster = [player("te1", "TE"), player("te2", "TE", { team: "NYJ" })];
+    const readiness = analyze(roster, ["TE"], options({ NYJ: [10] }));
+    assert.equal((week(readiness, 9).TE as AnalysisRecord).status, "covered");
+    assert.equal((week(readiness, 10).TE as AnalysisRecord).status, "thin");
+    const unavailable = analyze([roster[0]!, { ...roster[1]!, injury_status: "Out" }], ["TE"]);
+    assert.equal((week(unavailable, 6).TE as AnalysisRecord).status, "thin");
+    assert.equal((week(analyze(roster, ["TE"], options({ BUF: [6], NYJ: [6] })), 6).TE as AnalysisRecord).status, "uncovered");
+  });
+
+  it("does not let an unrelated existing QB hole make WR thin", () => {
+    const positions = week(analyze([
+      player("wr1", "WR"), player("wr2", "WR"), player("wr3", "WR"),
+      player("rb1", "RB"), player("rb2", "RB"),
+    ], ["QB", "RB", "WR", "WR", "FLEX"]), 6);
+    assert.equal((positions.QB as AnalysisRecord).status, "uncovered");
+    assert.equal((positions.WR as AnalysisRecord).status, "covered");
+  });
+
+  it("respects REC_FLEX eligibility instead of treating a spare RB as WR depth", () => {
+    const positions = week(analyze([
+      player("wr1", "WR"), player("wr2", "WR"), player("wr3", "WR"),
+      player("rb1", "RB"), player("rb2", "RB"),
+    ], ["RB", "WR", "WR", "REC_FLEX"]), 6);
+    assert.equal((positions.WR as AnalysisRecord).status, "thin");
+    assert.equal((positions.RB as AnalysisRecord).status, "covered");
+    const withTe = week(analyze([
+      player("wr1", "WR"), player("wr2", "WR"), player("wr3", "WR"), player("te", "TE"),
+    ], ["WR", "WR", "REC_FLEX"]), 6);
+    assert.equal((withTe.WR as AnalysisRecord).status, "covered");
   });
 
   it("marks DEF bye uncovered and covered when a second usable DEF is rostered", () => {

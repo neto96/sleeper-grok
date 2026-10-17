@@ -115,9 +115,32 @@ export function addFutureReadiness(
         );
       }
       const lineup = calculateOptimalLineup(futureOffense, configuration);
-      const assignedIds = new Set(
-        Object.values(lineup).flatMap((players) => players.map((player) => String(player.player_id))),
-      );
+      // Preserve the slots already filled; an unrelated existing hole must not
+      // make every otherwise resilient position look thin.
+      const coverageConfiguration: AnalysisRecord = {
+        ...configuration,
+        direct_slots: Object.fromEntries(Object.entries((configuration.direct_slots ?? {}) as Record<string, number>)
+          .map(([code, count]) => [code, Math.min(count, (lineup[code] ?? []).length)])),
+        flex_slots: Object.fromEntries(Object.entries((configuration.flex_slots ?? {}) as Record<string, AnalysisRecord>)
+          .map(([code, slot]) => [code, { ...slot, count: (lineup[code] ?? []).length }])),
+      };
+      const baselineFilled = Object.values(lineup).reduce((sum, players) => sum + players.length, 0);
+      const lossBreaksCoverage = new Map<string, boolean>();
+      function cannotReplace(playerId: string): boolean {
+        if (!lossBreaksCoverage.has(playerId)) {
+          // Equal positive values ask the shared optimizer for legal coverage,
+          // not the highest-value lineup. Do not mutate structural player values.
+          const remaining = Object.fromEntries(Object.entries(futureOffense).map(([position, players]) => [
+            position,
+            players.filter((player) => String(player.player_id) !== playerId)
+              .map((player) => ({ ...player, fantasy_value_tier: "useful", importance_score: 0 })),
+          ]));
+          const rebuilt = calculateOptimalLineup(remaining, coverageConfiguration);
+          const filled = Object.values(rebuilt).reduce((sum, players) => sum + players.length, 0);
+          lossBreaksCoverage.set(playerId, filled < baselineFilled);
+        }
+        return lossBreaksCoverage.get(playerId)!;
+      }
       const positions: Record<string, JsonValue> = {};
 
       for (const spec of specs) {
@@ -141,11 +164,10 @@ export function addFutureReadiness(
           const eligible = distinctPlayers(
             spec.eligible.flatMap((position) => futureOffense[position] ?? []),
           );
-          extraBodies = eligible.filter((player) => !assignedIds.has(String(player.player_id))).length;
           status =
             usable < spec.required
               ? "uncovered"
-              : extraBodies === 0 && affected.length === 0
+              : eligible.some((player) => cannotReplace(String(player.player_id)))
                 ? "thin"
                 : "covered";
         } else {
@@ -173,7 +195,9 @@ export function addFutureReadiness(
                 ? `No usable ${spec.code} available for Week ${week}.`
                 : `Only ${usable} usable ${spec.code} available for ${spec.required} slots in Week ${week}.`;
         } else if (status === "thin") {
-          reason = `Only enough usable ${spec.code} players to fill ${spec.required} slot(s) in Week ${week}.`;
+          reason = spec.kind === "offense"
+            ? `Losing one available ${spec.code} player would leave a currently covered starting slot unfilled in Week ${week}.`
+            : `Only enough usable ${spec.code} players to fill ${spec.required} slot(s) in Week ${week}.`;
         } else if (status === "covered") {
           reason = `${spec.code} lineup remains covered in Week ${week}.`;
         }
