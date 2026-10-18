@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { analyzeTrade, type TeamTradeImpact, type TradeAnalysisResult } from "@/lib/sleeper/trade-analyzer";
+import type { AnalyzedTradeExport } from "@/lib/sleeper/trade-markdown";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster } from "@/lib/sleeper/types";
 
 function rosterPlayers(team: TeamRoster): PlayerSlot[] {
@@ -152,7 +153,7 @@ function ImpactCard({ impact, mine }: { impact: TeamTradeImpact; mine: boolean }
   );
 }
 
-export function TradePanel({ snapshot, myRosterId }: { snapshot: LeagueSnapshot; myRosterId: number }) {
+export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = false }: { snapshot: LeagueSnapshot; myRosterId: number; onAnalyzedTrade: (trade: AnalyzedTradeExport | null) => void; disabled?: boolean }) {
   const myTeam = snapshot.teams.find((team) => team.rosterId === myRosterId) ?? snapshot.teams[0]!;
   const initialPartner = snapshot.teams.find((team) => team.rosterId !== myTeam.rosterId)?.rosterId ?? myTeam.rosterId;
   const [partnerId, setPartnerId] = useState(initialPartner);
@@ -170,15 +171,17 @@ export function TradePanel({ snapshot, myRosterId }: { snapshot: LeagueSnapshot;
     setSendIds([]);
     setReceiveIds([]);
     setResult(null);
-  }, [myTeam.rosterId, snapshot.fetchedAt]);
+    onAnalyzedTrade(null);
+  }, [myTeam.rosterId, snapshot, onAnalyzedTrade]);
 
   useEffect(() => {
     setSendIds([]);
     setReceiveIds([]);
     setResult(null);
-  }, [partnerId]);
+    onAnalyzedTrade(null);
+  }, [partnerId, onAnalyzedTrade]);
 
-  const canAnalyze = Boolean(partner && sendIds.length > 0 && receiveIds.length > 0);
+  const canAnalyze = Boolean(!disabled && partner && sendIds.length > 0 && receiveIds.length > 0);
   const selectionSummary = useMemo(() => `${sendIds.length} out · ${receiveIds.length} in`, [sendIds.length, receiveIds.length]);
 
   function toggle(setter: Dispatch<SetStateAction<string[]>>, playerId: string) {
@@ -186,22 +189,27 @@ export function TradePanel({ snapshot, myRosterId }: { snapshot: LeagueSnapshot;
       current.includes(playerId) ? current.filter((id) => id !== playerId) : [...current, playerId],
     );
     setResult(null);
+    onAnalyzedTrade(null);
   }
 
   function clear() {
     setSendIds([]);
     setReceiveIds([]);
     setResult(null);
+    onAnalyzedTrade(null);
   }
 
   function run() {
-    if (!partner) return;
-    setResult(analyzeTrade(snapshot, {
+    if (!partner || disabled) return;
+    const request = {
       teamAId: myTeam.rosterId,
       teamBId: partner.rosterId,
       teamAPlayerIds: sendIds,
       teamBPlayerIds: receiveIds,
-    }));
+    };
+    const analyzed = analyzeTrade(snapshot, request);
+    setResult(analyzed);
+    onAnalyzedTrade(analyzed.valid ? { snapshot, request, result: analyzed } : null);
   }
 
   if (!partner) {
@@ -216,7 +224,7 @@ export function TradePanel({ snapshot, myRosterId }: { snapshot: LeagueSnapshot;
             Trade partner
             <select
               value={partner.rosterId}
-              onChange={(event) => setPartnerId(Number(event.target.value))}
+              onChange={(event) => { clear(); setPartnerId(Number(event.target.value)); }}
               className="mt-1.5 h-11 w-full rounded-md bg-muted px-3 text-sm text-foreground shadow-[0_0_0_1px_color-mix(in_oklab,var(--color-foreground)_12%,transparent)] outline-none focus-visible:shadow-[0_0_0_2px_var(--color-ring)]"
             >
               {snapshot.teams
@@ -240,7 +248,7 @@ export function TradePanel({ snapshot, myRosterId }: { snapshot: LeagueSnapshot;
         <Button type="button" onClick={run} disabled={!canAnalyze} className="sm:w-48">
           <ArrowLeftRight />Analyze trade
         </Button>
-        {!canAnalyze ? <p className="text-xs text-muted-foreground">Select at least one player from each team.</p> : null}
+        {!canAnalyze ? <p className="text-xs text-muted-foreground">{disabled ? "Wait for the roster refresh to finish." : "Select at least one player from each team."}</p> : null}
       </div>
 
       {result && !result.valid ? (

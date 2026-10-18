@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WaiverPanel } from "@/components/waiver-panel";
+import { buildExportMarkdown, type AnalyzedTradeExport } from "@/lib/sleeper/trade-markdown";
 import { TradePanel } from "@/components/trade-panel";
 import { copyText, downloadJson, downloadMarkdown } from "@/lib/clipboard";
 import {
@@ -74,12 +75,20 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
   const [myRosterId, setMyRosterId] = useState(initialSnapshot.myRosterId);
   const [tab, setTab] = useState<Tab>("rosters");
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(initialSnapshot);
+  const [tradeSession, setTradeSession] = useState(0);
+  const [analyzedTrade, setAnalyzedTrade] = useState<AnalyzedTradeExport | null>(null);
+  const exportMarkdown = snapshot ? buildExportMarkdown(snapshot, analyzedTrade) : "";
   const [copied, setCopied] = useState(false);
 
   const fetchMutation = useMutation({
     mutationFn: (input: { leagueId: string; myRosterId: number }) =>
       fetchLeagueRosters({ data: input }),
+    onMutate: () => {
+      setAnalyzedTrade(null);
+      setTradeSession((session) => session + 1);
+    },
     onSuccess: (data) => {
+      setAnalyzedTrade(null);
       setSnapshot(data);
       setMyRosterId(data.myRosterId);
       window.localStorage.setItem(LEAGUE_ID_STORAGE_KEY, data.leagueId);
@@ -110,6 +119,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
   const otherTeams = snapshot?.teams.filter((team) => team.rosterId !== myRosterId) ?? [];
 
   function setMine(rosterId: number) {
+    setAnalyzedTrade(null);
     setMyRosterId(rosterId);
     window.localStorage.setItem(MY_ROSTER_STORAGE_KEY, String(rosterId));
     setSnapshot((current) => (current ? applyMyRoster(current, rosterId) : current));
@@ -117,7 +127,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
 
   async function handleCopy() {
     if (!snapshot) return;
-    const ok = await copyText(snapshot.markdown);
+    const ok = await copyText(exportMarkdown);
     if (ok) {
       setCopied(true);
       toast.success("Markdown copied");
@@ -130,7 +140,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
 
   function handleDownload() {
     if (!snapshot) return;
-    downloadMarkdown(snapshot.filename, snapshot.markdown);
+    downloadMarkdown(snapshot.filename, exportMarkdown);
     toast.success("Markdown file saved");
   }
 
@@ -299,7 +309,11 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
         ) : null}
 
         {snapshot && tab === "waivers" ? <WaiverPanel snapshot={snapshot} /> : null}
-        {snapshot && tab === "trade" ? <TradePanel snapshot={snapshot} myRosterId={myRosterId} /> : null}
+        {snapshot ? (
+          <div hidden={tab !== "trade"}>
+            <TradePanel key={tradeSession} snapshot={snapshot} myRosterId={myRosterId} onAnalyzedTrade={setAnalyzedTrade} disabled={refreshing} />
+          </div>
+        ) : null}
         {snapshot && tab === "activity" ? <ActivityPanel snapshot={snapshot} /> : null}
 
         {snapshot && tab === "markdown" ? (
@@ -313,7 +327,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
               for a chat. Download the .md or copy the text below.
             </p>
             <pre className="max-h-[70vh] overflow-auto rounded-xl bg-card p-4 font-mono text-xs leading-relaxed text-foreground shadow-border sm:text-sm">
-              {snapshot.markdown}
+              {exportMarkdown}
             </pre>
           </section>
         ) : null}
