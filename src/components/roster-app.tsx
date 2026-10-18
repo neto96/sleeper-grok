@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WaiverPanel } from "@/components/waiver-panel";
+import { TradePanel } from "@/components/trade-panel";
 import { copyText, downloadJson, downloadMarkdown } from "@/lib/clipboard";
 import {
   DEFAULT_LEAGUE_ID,
@@ -23,11 +24,12 @@ import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 import type { LeagueSnapshot } from "@/lib/sleeper/types";
 import { cn } from "@/lib/utils";
 
-type Tab = "rosters" | "waivers" | "activity" | "markdown";
+type Tab = "rosters" | "waivers" | "trade" | "activity" | "markdown";
 
 const TABS: [Tab, string][] = [
   ["rosters", "Rosters"],
   ["waivers", "Waivers"],
+  ["trade", "Trade"],
   ["activity", "Activity"],
   ["markdown", "Markdown"],
 ];
@@ -215,7 +217,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
         {snapshot ? (
           <div className="sticky top-0 z-20 -mx-4 mt-6 border-b border-border bg-background/95 px-4 py-3 backdrop-blur-sm sm:mx-0 sm:rounded-xl sm:border">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div className="grid min-w-0 grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-4">
+              <div className="grid min-w-0 grid-cols-2 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-5">
                 {TABS.map(([id, label]) => (
                   <button
                     key={id}
@@ -297,6 +299,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
         ) : null}
 
         {snapshot && tab === "waivers" ? <WaiverPanel snapshot={snapshot} /> : null}
+        {snapshot && tab === "trade" ? <TradePanel snapshot={snapshot} myRosterId={myRosterId} /> : null}
         {snapshot && tab === "activity" ? <ActivityPanel snapshot={snapshot} /> : null}
 
         {snapshot && tab === "markdown" ? (
