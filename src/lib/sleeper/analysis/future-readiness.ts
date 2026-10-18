@@ -152,6 +152,8 @@ export function addFutureReadiness(
         let assignedPlayerIds: string[] = [];
         let status: "covered" | "thin" | "uncovered" | "unsupported" = "unsupported";
         let reason: string | null = null;
+        let vulnerable: AnalysisRecord[] = [];
+        let available: AnalysisRecord[] = [];
 
         if (!options.byeScheduleAvailable) {
           reason = "Bye-week coverage could not be evaluated because the NFL schedule is unavailable.";
@@ -164,10 +166,12 @@ export function addFutureReadiness(
           const eligible = distinctPlayers(
             spec.eligible.flatMap((position) => futureOffense[position] ?? []),
           );
+          available = eligible;
+          vulnerable = eligible.filter((player) => cannotReplace(String(player.player_id)));
           status =
             usable < spec.required
               ? "uncovered"
-              : eligible.some((player) => cannotReplace(String(player.player_id)))
+              : vulnerable.length > 0
                 ? "thin"
                 : "covered";
         } else {
@@ -195,9 +199,22 @@ export function addFutureReadiness(
                 ? `No usable ${spec.code} available for Week ${week}.`
                 : `Only ${usable} usable ${spec.code} available for ${spec.required} slots in Week ${week}.`;
         } else if (status === "thin") {
-          reason = spec.kind === "offense"
-            ? `Losing one available ${spec.code} player would leave a currently covered starting slot unfilled in Week ${week}.`
-            : `Only enough usable ${spec.code} players to fill ${spec.required} slot(s) in Week ${week}.`;
+          if (spec.kind === "offense") {
+            const names = (players: AnalysisRecord[], type: "conjunction" | "disjunction" = "conjunction") => new Intl.ListFormat("en", { style: "long", type })
+              .format(players.map(player => String(player.name ?? player.player_id)));
+            const unavailable = distinctPlayers(spec.eligible.flatMap(position => positionPlayers[position] ?? []))
+              .filter(player => usableById.get(String(player.player_id)) !== true && !affected.some(bye => bye.player_id === player.player_id));
+            const causes = [
+              affected.length ? `${names(affected)} ${affected.length === 1 ? "is" : "are"} on bye.` : "",
+              unavailable.length ? `${names(unavailable)} ${unavailable.length === 1 ? "is" : "are"} currently unavailable.` : "",
+            ].filter(Boolean);
+            const depth = spec.kind === "offense" && OFFENSE.has(spec.code) && available.length === spec.required
+              ? `${names(available)} ${available.length === 1 ? "is your only available" : "are your only available"} ${spec.code}${available.length === 1 ? "" : "s"} for Week ${week}.`
+              : `${names(available)} cover your ${spec.code} options for Week ${week}, including players needed in other starting slots.`;
+            reason = [...causes, depth, `There is no legal replacement if ${names(vulnerable, "disjunction")} cannot play; a currently covered starting slot would be left unfilled.`].join(" ");
+          } else {
+            reason = `Only enough usable ${spec.code} players to fill ${spec.required} slot(s) in Week ${week}.`;
+          }
         } else if (status === "covered") {
           reason = `${spec.code} lineup remains covered in Week ${week}.`;
         }
@@ -210,7 +227,7 @@ export function addFutureReadiness(
           reason,
           affected_player_ids: affected.map((player) => String(player.player_id)),
           assigned_player_ids: assignedPlayerIds,
-          assigned_player_ids: assignedPlayerIds,
+          ...(spec.kind === "offense" ? { vulnerable_player_ids: vulnerable.map(player => String(player.player_id)) } : {}),
         };
       }
       weeks[String(week)] = { positions };

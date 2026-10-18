@@ -238,6 +238,19 @@ export function buildTeamRecommendations(
     });
   }
 
+  // Suppress a FLEX WATCH only when surviving direct alerts for the same
+  // week already explain every vulnerable player. Keep legacy rows without evidence.
+  for (let index = actions.length - 1; index >= 0; index -= 1) {
+    const action = actions[index]!;
+    if (action.category !== "depth" || ["QB", "RB", "WR", "TE"].includes(action.position_or_slot ?? "")) continue;
+    const slots = record(record(readinessWeeks[String(action.week)]).positions);
+    const losses = list(record(slots[action.position_or_slot ?? ""]).vulnerable_player_ids).map(String);
+    const explained = new Set(actions.filter(other => other.category === "depth" && other.week === action.week &&
+      ["QB", "RB", "WR", "TE"].includes(other.position_or_slot ?? ""))
+      .flatMap(other => list(record(slots[other.position_or_slot!]).vulnerable_player_ids).map(String)));
+    if (losses.length > 0 && losses.every(id => explained.has(id))) actions.splice(index, 1);
+  }
+
   // Each action is an alternative evaluated against the original roster, not a sequence of drops.
   const urgentAdds = actions.filter((action) => action.urgency === "act_now" && ["lineup_hole", "bye_week", "k_stream", "def_stream"].includes(action.category));
   if (urgentAdds.length > 0) {

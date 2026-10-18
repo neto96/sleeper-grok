@@ -249,3 +249,57 @@ describe("V3.5 Phase 2 recommendations", () => {
     assert.deepEqual(buildTeamRecommendations(team).actions, []);
   });
 });
+
+describe("V3.5.1 concrete WATCH causes", () => {
+  function liveLike() {
+    const entries = [
+      ["Penix", "QB", "ATL", null], ["Burrow", "QB", "CIN", null],
+      ["Allen", "RB", "NYJ", null], ["Emanuel Wilson", "RB", "SEA", null],
+      ["White", "RB", "WAS", null], ["Love", "RB", "ARI", "Out"], ["Jacobs", "RB", "GB", "NA"],
+      ["Waddle", "WR", "DEN", "Questionable"], ["McMillan", "WR", "CAR", null],
+      ["Michael Wilson", "WR", "ARI", null], ["Brown", "WR", "NE", "Questionable"],
+      ["Strange", "TE", "JAX", null], ["LaPorta", "TE", "DET", null],
+    ];
+    const players = entries.map(([name, position, team, injury_status], i) => ({ player_id: String(i), name, position, team, injury_status, status: "Active", search_rank: 50 + i }));
+    const config = parseRosterConfiguration(["QB", "RB", "RB", "WR", "WR", "TE", "FLEX", "K", "DEF"]);
+    const analysis = buildFantasyAnalysis({ "1": { players, starters: [], reserve: [], taxi: [] } }, config);
+    addFutureReadiness(analysis, config, { currentWeek: 6, regularSeasonEndWeek: 18, byeScheduleAvailable: true, byeWeeksByTeam: { CIN: [6], DET: [6], WAS: [7], JAX: [7], DEN: [10] } });
+    const team = (analysis.teams as Record<string, AnalysisRecord>)["1"]!;
+    return { team, config };
+  }
+  it("explains live-like Week 6/7 shortages by name without duplicate FLEX alerts", () => {
+    const { team, config } = liveLike();
+    const actions = buildTeamRecommendations(team, {}, config).actions.filter(a => a.category === "depth");
+    assert.deepEqual(actions.map(a => [a.week, a.position_or_slot]), [[6, "QB"], [6, "TE"], [7, "RB"], [7, "TE"]]);
+    assert.match(actions[0]!.reason, /Burrow is on bye\. Penix is your only available QB/);
+    assert.match(actions[1]!.reason, /LaPorta is on bye\. Strange is your only available TE/);
+    assert.match(actions[2]!.reason, /White is on bye\. Love and Jacobs are currently unavailable/);
+    assert.match(actions[2]!.reason, /Allen and Emanuel Wilson are your only available RBs/);
+    assert.match(actions[3]!.reason, /Strange is on bye\. LaPorta is your only available TE/);
+  });
+  it("retains a genuine FLEX-only bottleneck when there is no direct alert to explain it", () => {
+    const config = parseRosterConfiguration(["FLEX"]);
+    const analysis = buildFantasyAnalysis({ "1": { players: [{ player_id: "wr", name: "Only Receiver", position: "WR", team: "BUF", status: "Active", injury_status: null, search_rank: 50 }], starters: [], reserve: [], taxi: [] } }, config);
+    addFutureReadiness(analysis, config, { currentWeek: 6, regularSeasonEndWeek: 6, byeScheduleAvailable: true, byeWeeksByTeam: {} });
+    const team = (analysis.teams as Record<string, AnalysisRecord>)["1"]!;
+    const action = buildTeamRecommendations(team, {}, config).actions[0]!;
+    assert.equal(action.position_or_slot, "FLEX");
+    assert.match(action.reason, /Only Receiver/);
+    assert.match(action.reason, /no legal replacement/);
+  });
+  it("does not suppress legacy FLEX warnings without concrete loss evidence", () => {
+    const { team } = fixture({ weeks: { "6": { TE: row("thin", "watch"), FLEX: row("thin", "watch") } } });
+    assert.deepEqual(buildTeamRecommendations(team).actions.map(a => a.position_or_slot), ["FLEX", "TE"]);
+  });
+});
+
+
+it("keeps FLEX when its explaining direct WATCH was removed for a later uncovered week", () => {
+  const { team } = fixture({ weeks: {
+    "6": { TE: row("thin", "watch", [], { vulnerable_player_ids: ["te"] }), FLEX: row("thin", "watch", [], { vulnerable_player_ids: ["te"] }) },
+    "7": { TE: row("uncovered", "act_now") },
+  } });
+  const actions = buildTeamRecommendations(team).actions;
+  assert.ok(actions.some(a => a.week === 6 && a.position_or_slot === "FLEX" && a.category === "depth"));
+  assert.ok(actions.some(a => a.week === 7 && a.position_or_slot === "TE" && a.urgency === "act_now"));
+});
