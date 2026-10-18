@@ -318,8 +318,8 @@ describe("V3.3 roster surplus", () => {
       [
         { player_id: "rb1", surplus_type: "needed", in_optimal_lineup: true },
         { player_id: "rb2", surplus_type: "needed", in_optimal_lineup: true },
-        { player_id: "rb3", surplus_type: "needed", in_optimal_lineup: false },
-        { player_id: "wr1", surplus_type: "surplus", in_optimal_lineup: true },
+        { player_id: "rb3", surplus_type: "surplus", in_optimal_lineup: false },
+        { player_id: "wr1", surplus_type: "needed", in_optimal_lineup: true },
       ],
     );
   });

@@ -884,16 +884,15 @@ export function calculateLineupStrength(team: AnalysisRecord, rosterConfiguratio
   return strength;
 }
 
-export function calculateRosterSurplus(team: AnalysisRecord, rosterConfiguration: AnalysisRecord): AnalysisRecord[] {
+export function calculateRosterSurplus(team: AnalysisRecord, _rosterConfiguration: AnalysisRecord): AnalysisRecord[] {
   const positions = (team.positions ?? {}) as Record<string, AnalysisRecord[]>;
   const optimal = (team.optimal_lineup ?? {}) as Record<string, AnalysisRecord[]>;
-  return calculateSurplusForCandidates(positions, optimal, rosterConfiguration);
+  return calculateSurplusForCandidates(positions, optimal);
 }
 
 function calculateSurplusForCandidates(
   positions: Record<string, AnalysisRecord[]>,
   optimal: Record<string, AnalysisRecord[]>,
-  rosterConfiguration: AnalysisRecord,
 ): AnalysisRecord[] {
   const lineupIds = new Set<unknown>();
   for (const players of Object.values(optimal)) {
@@ -916,19 +915,6 @@ function calculateSurplusForCandidates(
     meaningfulPositions[position] = ranked.map((entry) => entry.player);
   }
 
-  const offensiveSlots = expandRosterSlots(rosterConfiguration).filter(
-    (slot) =>
-      (slot.slot_type === "direct" || slot.slot_type === "flex") &&
-      slot.supported_by_analyzer &&
-      slot.eligible_positions.some((position) => (OFFENSIVE_POSITIONS as readonly string[]).includes(position)),
-  );
-  const coverage = assignRosterSlotCoverage(offensiveSlots, meaningfulPositions);
-  const needed = new Set(
-    coverage.assignments
-      .filter((assignment) => assignment.player_id != null)
-      .map((assignment) => String(assignment.player_id)),
-  );
-
   const surplus: AnalysisRecord[] = [];
   const reported = new Set<string>();
   for (const position of OFFENSIVE_POSITIONS) {
@@ -940,8 +926,8 @@ function calculateSurplusForCandidates(
         reported.add(key);
       }
       const inLineup = lineupIds.has(playerId);
-      const isNeeded = playerId != null && needed.has(String(playerId));
-      const surplusType = isNeeded ? "needed" : position === "QB" || position === "TE" ? "replaceable" : "surplus";
+      // Surplus must describe this optimized lineup, not a second legal assignment.
+      const surplusType = inLineup ? "needed" : position === "QB" || position === "TE" ? "replaceable" : "surplus";
       const status = player.injury_status === "IR" ? "injured" : player.roster_status === "starter" ? "starter" : "bench";
       surplus.push({
         player_id: playerId ?? null,
@@ -1414,7 +1400,6 @@ export function buildFantasyAnalysis(
     availability.actionable_surplus = calculateSurplusForCandidates(
       usablePositions,
       availability.usable_lineup as Record<string, AnalysisRecord[]>,
-      rosterConfiguration,
     );
     team.availability = availability;
     const usablePositionSummary: Record<string, AnalysisRecord> = {};

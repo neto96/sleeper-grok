@@ -104,3 +104,53 @@ describe("V3.4 actionable surplus", () => {
     assert.deepEqual(rows(team, "actionable_surplus"), []);
   });
 });
+
+describe("surplus follows the optimized lineup in each context", () => {
+  for (const [slot, position] of [
+    ["FLEX", "WR"], ["FLEX", "RB"], ["FLEX", "TE"],
+    ["REC_FLEX", "WR"], ["REC_FLEX", "TE"],
+    ["WRRB_FLEX", "RB"], ["SUPER_FLEX", "QB"],
+  ]) {
+    it(`excludes a ${position} assigned to ${slot} from both surplus contexts`, () => {
+      const { team } = buildTeam([
+        player("direct", position!, 10),
+        player("flex", position!, 20),
+        player("backup", position!, 80),
+      ], [position!, slot!]);
+      const availability = team.availability as AnalysisRecord;
+      for (const [lineup, surplus] of [
+        [team.optimal_lineup, team.roster_surplus],
+        [availability.usable_lineup, availability.actionable_surplus],
+      ]) {
+        const assignments = Object.values(lineup as Record<string, AnalysisRecord[]>).flat();
+        assert.equal(new Set(assignments.map(p => p.player_id)).size, assignments.length);
+        assert.equal(assignments.length, 2);
+        assert.deepEqual((lineup as Record<string, AnalysisRecord[]>)[slot!]!.map(p => p.player_id), ["flex"]);
+        const entries = surplus as AnalysisRecord[];
+        for (const id of ["direct", "flex"]) {
+          assert.equal(entries.find(p => p.player_id === id)?.surplus_type, "needed");
+          assert.equal(entries.find(p => p.player_id === id)?.in_optimal_lineup, true);
+        }
+        const backup = entries.find(p => p.player_id === "backup")!;
+        assert.equal(backup.in_optimal_lineup, false);
+        assert.ok(["surplus", "replaceable"].includes(String(backup.surplus_type)));
+      }
+    });
+  }
+
+  it("keeps all-roster and available assignments independent when a starter is out", () => {
+    const { team } = buildTeam([
+      player("out", "WR", 10, { injury_status: "Out" }),
+      player("healthy", "WR", 20),
+      player("replacement", "WR", 80),
+      player("bench", "WR", 100),
+    ], ["WR", "FLEX"]);
+    const structural = team.roster_surplus as AnalysisRecord[];
+    const available = rows(team, "actionable_surplus");
+    assert.equal(structural.find(p => p.player_id === "replacement")?.surplus_type, "surplus");
+    assert.equal(available.find(p => p.player_id === "replacement")?.surplus_type, "needed");
+    assert.equal(available.some(p => p.player_id === "out"), false);
+    assert.equal(structural.find(p => p.player_id === "out")?.surplus_type, "needed");
+    assert.equal(available.find(p => p.player_id === "bench")?.surplus_type, "surplus");
+  });
+});
