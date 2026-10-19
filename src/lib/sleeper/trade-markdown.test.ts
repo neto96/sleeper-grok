@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { buildExportMarkdown, buildTradeMarkdown, type AnalyzedTradeExport } from "./trade-markdown.ts";
+import { lineupChangeReason } from "./trade-presentation.ts";
 import type { TradeAnalysisResult, TeamTradeImpact, TradeRequest } from "./trade-analyzer.ts";
 import type { LeagueSnapshot, TeamRoster, PlayerSlot } from "./types.ts";
 
@@ -101,10 +102,44 @@ describe("trade Markdown export", () => {
     trade.result.teamA.reasons = Array.from({ length: 7 }, (_, i) => `Reason ${i}`);
     const text = buildTradeMarkdown(trade.snapshot, trade.request, trade.result);
     assert.match(text, /&lt;Team&gt;/);
-    assert.ok(text.includes("\\#\\# Injected"));
-    assert.ok(text.includes("\\[Player\\]\\(https://example\\.com\\)"));
+    assert.ok(text.includes("&lt;Team&gt; ## Injected")); // Flattened, not a new heading.
+    assert.ok(text.includes("\\[Player\\](https://example.com)"));
     assert.match(text, /Reason 4/);
     assert.doesNotMatch(text, /Reason 5/);
     assert.match(text, /Mostly lateral/);
+  });
+
+  it("keeps ordinary punctuation natural while protecting active Markdown syntax", () => {
+    const trade = fixture();
+    assert.ok(trade.result.valid);
+    trade.snapshot.teams[0]!.bench[0]!.name = "A.J. Brown";
+    trade.result.teamA.reasons = ["RB depth or need improves.", "Requires 2 follow-up drops.", "# Heading", "1. Numbered", "- Nested"];
+    const text = buildTradeMarkdown(trade.snapshot, trade.request, trade.result);
+    assert.ok(text.includes("A.J. Brown"));
+    assert.ok(text.includes("RB depth or need improves."));
+    assert.ok(text.includes("Requires 2 follow-up drops."));
+    assert.ok(text.includes("- \\# Heading"));
+    assert.ok(text.includes("- 1\\. Numbered"));
+    assert.ok(text.includes("- \\- Nested"));
+    assert.ok(!text.includes("A\\.J\\."));
+    assert.ok(!text.includes("follow\\-up"));
+  });
+
+  it("exports the same context-specific reasons shown by the UI", () => {
+    const trade = fixture();
+    assert.ok(trade.result.valid);
+    const impact = trade.result.teamA;
+    impact.lineupChanges = [
+      { context: "all_roster", slot: "FLEX", ordinal: 1, kind: "upgraded", beforePlayerId: "rome", beforePlayerName: "Rome Odunze", afterPlayerId: "michael", afterPlayerName: "Michael Wilson" },
+      { context: "available", slot: "FLEX", ordinal: 1, kind: "upgraded", beforePlayerId: "xavier", beforePlayerName: "Xavier Worthy", afterPlayerId: "michael", afterPlayerName: "Michael Wilson" },
+    ];
+    impact.reasons = impact.lineupChanges.map((change) => lineupChangeReason(change, impact.lineupChanges));
+    const before = structuredClone(trade.result);
+    const text = buildExportMarkdown(trade.snapshot, trade);
+    for (const reason of impact.reasons) assert.ok(text.includes(`- ${reason}`));
+    assert.match(text, /All-roster lineup: FLEX1 improves from Rome Odunze/);
+    assert.match(text, /Available lineup: FLEX1 improves from Xavier Worthy/);
+    assert.match(text, /## Trade Analysis/);
+    assert.deepEqual(trade.result, before);
   });
 });

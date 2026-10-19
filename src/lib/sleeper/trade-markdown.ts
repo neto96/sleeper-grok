@@ -10,7 +10,11 @@ export type AnalyzedTradeExport = {
 // Keep roster-provided names on one line and prevent Markdown/HTML injection.
 function plain(value: string): string {
   return value.replace(/[\r\n]+/g, " ").replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/[\\`*_{}\[\]()#+.!|~-]/g, "\\$&");
+    .replace(/>/g, "&gt;").replace(/[\\`*_\[\]~]/g, "\\$&")
+    // Text can begin a list item or heading body: protect block markers there.
+    .replace(/^(\s*)(#{1,6})(?=\s|$)/, "$1\\$2")
+    .replace(/^(\s*)([-+])(?=\s|-)/, "$1\\$2")
+    .replace(/^(\s*\d+)([.)])(?=\s)/, "$1\\$2");
 }
 function names(values: string[]): string {
   return values.map(plain).join(", ");

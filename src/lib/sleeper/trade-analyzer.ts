@@ -1,4 +1,5 @@
 import { buildFantasyAnalysis, parseRosterConfiguration, type AnalysisRecord } from "./analysis/engine.ts";
+import { lineupChangeReason } from "./trade-presentation.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster } from "./types.ts";
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
@@ -331,14 +332,10 @@ function summarizeVerdict(
 
   const reasons: string[] = [];
   for (const change of positiveLineup.slice(0, 2)) {
-    reasons.push(change.kind === "filled"
-      ? `Fills ${change.slot}${change.ordinal} with ${change.afterPlayerName}.`
-      : `Upgrades ${change.slot}${change.ordinal} from ${change.beforePlayerName} to ${change.afterPlayerName}.`);
+    reasons.push(lineupChangeReason(change, lineupChanges));
   }
   for (const change of negativeLineup.slice(0, 2)) {
-    reasons.push(change.kind === "uncovered"
-      ? `Leaves ${change.slot}${change.ordinal} without a starter.`
-      : `Downgrades ${change.slot}${change.ordinal} from ${change.beforePlayerName} to ${change.afterPlayerName}.`);
+    reasons.push(lineupChangeReason(change, lineupChanges));
   }
   for (const impact of improvedPositions.slice(0, 2)) reasons.push(`${impact.position} depth or need improves.`);
   for (const impact of worsenedPositions.slice(0, 2)) reasons.push(`${impact.position} depth or need worsens.`);
