@@ -245,13 +245,16 @@ describe("V3.4 actionable waiver analysis", () => {
     ];
     const bundle = buildAnalysisBundle([target], [1], ["QB", "RB"], pool, 1);
     const json = snapshotJson({
+      fetchedAt:'2026-10-29T00:00:00Z',leagueId:'test',leagueName:'Test',season:'2026',seasonType:'regular',status:'in_season',sport:'nfl',
+      scoring:'PPR',week:8,displayWeek:8,rosterSlots:['QB','RB'],benchSlots:0,playoffTeams:0,avatar:null,myRosterId:1,waiverSystem:'Waiver Priority',
+      teams:[target],waiverOrder:[],waiverByPosition:{},transactions:[],matchups:[],notes:[],filename:'test.md',jsonFilename:'test.json',
       snapshotVersion: "3.2",
       fantasyAnalysis: bundle.fantasyAnalysis,
       waiverAnalysis: bundle.waiverAnalysis,
       actionableWaiverAnalysis: bundle.actionableWaiverAnalysis,
       analysisWaiverPool: bundle.analysisWaiverPool,
       markdown: "",
-    } as LeagueSnapshot);
+    } satisfies LeagueSnapshot);
 
     assert.ok("actionableWaiverAnalysis" in bundle);
     assert.ok("actionable_waiver_analysis" in json);

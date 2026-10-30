@@ -1,5 +1,7 @@
+import type { WaiverExport } from "@/lib/sleeper/waiver-markdown";
+import { projectedWaivers } from "@/lib/sleeper/waiver-valuation";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "@/lib/sleeper/priority-waivers";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { FANTASY_POSITIONS, type FantasyPosition } from "@/lib/sleeper/constants";
 import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
@@ -43,8 +45,14 @@ function needVariant(need: unknown) {
   return "default" as const;
 }
 
-export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
+export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapshot: LeagueSnapshot; disabled?:boolean; onComparison?: (value:WaiverExport|null)=>void }) {
   const [position, setPosition] = useState<FantasyPosition>("RB");
+  const [dropSelection,setDropSelection]=useState<{snapshot:LeagueSnapshot;id:string|null}>({snapshot,id:null});
+  const dropId=dropSelection.snapshot===snapshot ? dropSelection.id : null;
+  const projected=useMemo(()=>projectedWaivers(snapshot,dropId),[snapshot,dropId]);
+  useEffect(()=>{onComparison?.(!disabled && projected.status==='ready'?{snapshot,result:projected}:null);},[snapshot,projected,onComparison,disabled]);
+  const selectedTeam=snapshot.teams.find(t=>t.rosterId===snapshot.myRosterId);
+  const active=selectedTeam ? [...selectedTeam.starters,...selectedTeam.bench] : [];
   const players = snapshot.waiverByPosition[position] ?? [];
   const analysis = snapshot.fantasyAnalysis;
   const weeklyContextByPlayer = (analysis.weekly_context_by_player ?? {}) as Record<string, AnalysisRecord>;
@@ -80,8 +88,31 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
             : "Select a roster that is in this league to score waiver adds."}
         </p>
 
+        {snapshot.projections ? <section className="mt-4 rounded-lg border border-border p-4" data-testid="projected-waivers">
+          <h3 className="font-semibold">Projected waiver ranking</h3>
+          <p className="mt-1 text-sm text-muted-foreground">Expected starting-lineup change over Weeks {snapshot.projections.effectiveFromWeek ?? snapshot.projections.fromWeek}–{snapshot.projections.throughWeek}. Core offense only; K/DEF excluded. This is not a verified championship window. Only fully future weeks with verified timing are compared; same-day or unknown timing is excluded. Forecasts assume future participation.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Excluded scoring: {snapshot.projections.exclusions.join(', ') || 'none'}. This hypothetical comparison makes no roster move. Ready comparisons are included in copied and saved Markdown; JSON remains unchanged.</p>
+          {active.length===snapshot.rosterSlots.length+snapshot.benchSlots ? <label className="mt-3 block text-sm">Hypothetical drop
+            <select disabled={disabled} aria-label="Hypothetical waiver drop" className="mt-1 min-h-11 w-full rounded-md bg-muted px-3 text-foreground" value={dropId??''}
+              onChange={e=>setDropSelection({snapshot,id:e.target.value||null})}>
+              <option value="">Choose a player</option>
+              {active.filter(p=>OFFENSE.includes(p.position as typeof OFFENSE[number])).map(p=><option key={p.playerId} value={p.playerId}>{p.name} · {p.position}{p.injuryStatus?` · ${p.injuryStatus}`:''}</option>)}
+            </select>
+          </label>:null}
+          {projected.status!=='ready' ? <p className="mt-3 text-sm" role="status">{projected.reason} Existing structural recommendations remain below.</p> : <>
+            <p className="mt-3 text-sm">{projected.dropName ? `After dropping ${projected.dropName}` : 'Using your open roster spot'}. Ranked by points gained per week; negative values indicate a projected loss.</p>
+            <ol className="mt-2 divide-y divide-border">
+              {projected.rows.slice(0,12).map(row=><li key={row.playerId} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
+                <span>{row.name} · {row.position}{row.uncertain?' · Questionable':''}</span>
+                <span className="tabular-nums">{row.delta===null ? 'Unknown — incomplete forecast or lineup' : `${row.delta>=0?'+':''}${row.delta.toFixed(2)} points/week`}</span>
+              </li>)}
+            </ol>
+            <p className="mt-2 text-xs text-muted-foreground">{projected.rows.filter(r=>r.delta!==null).length} fully comparable candidates; {projected.rows.filter(r=>r.delta===null).length} unknown. Missing forecasts are not zero. Available candidates come from the full offensive waiver pool.</p>
+          </>}
+        </section>:null}
+
         <div className="mt-4">
-          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recommended Next Moves</h3>
+          <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{snapshot.projections ? 'Structural lineup needs' : 'Recommended Next Moves'}</h3>
           {recommendations.length === 0 ? (
             <p className="mt-1 text-sm text-muted-foreground">No urgent lineup or bye-week moves identified.</p>
           ) : (
@@ -146,7 +177,7 @@ export function WaiverPanel({ snapshot }: { snapshot: LeagueSnapshot }) {
 
         <div className="mt-4">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            {priorityGroups.length > 0 ? "Other Waiver Opportunities" : "Available Waiver Options"}
+            {snapshot.projections ? "Structural waiver context" : priorityGroups.length > 0 ? "Other Waiver Opportunities" : "Available Waiver Options"}
           </h3>
           <ul className="mt-1 divide-y divide-border/80">
             {!actionable?.available || actionableCandidates.length === 0 ? (

@@ -1,3 +1,4 @@
+import { loadProjections } from "./projections.server.ts";
 import { DEFAULT_MY_ROSTER_ID, FANTASY_POSITIONS, SLEEPER_API, SLEEPER_SCHEDULE_API, type FantasyPosition } from "./constants";
 import { buildAnalysisBundle, buildMarkdown, jsonFilename, markdownFilename, playerDisplayName, scoringLabel, sleeperPoints } from "./format";
 import { deriveByeWeeksFromSchedule } from "./analysis/future-readiness.ts";
@@ -23,7 +24,7 @@ type SleeperLeague = {
   sport: string;
   avatar?: string | null;
   roster_positions?: string[];
-  scoring_settings?: { rec?: number };
+  scoring_settings?: Record<string, number>;
   settings?: {
     waiver_budget?: number;
     playoff_teams?: number;
@@ -474,7 +475,16 @@ export async function loadLeagueSnapshot(
       ...(weeklyContext?.stale ? { stale: true } : {}),
     },
   );
+  // The window is the remaining NFL regular season, not an inferred fantasy championship.
+  const projections = league.sport === 'nfl' && league.season_type === 'regular' &&
+      String(state.season) === league.season && state.season_type === 'regular'
+    ? await loadProjections({season:league.season,fromWeek:week,throughWeek:18,
+        scoring:league.scoring_settings ?? {},schedule:scheduleGames,
+        players:[...contextPlayers.values()].map(p=>({id:p.sleeperId,position:p.position,team:p.team}))})
+    : undefined;
+  if (projections && !projections.available) notes.push(`Projected valuation unavailable: ${projections.reason}.`);
   const base = {
+    projections,
     fetchedAt,
     leagueId: league.league_id || id,
     leagueName: league.name,

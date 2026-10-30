@@ -1,5 +1,12 @@
 node_modules/
+test-results/
 .project_id
 .github_repo
 .env
 .env.*
+
+__pycache__/
+*.py[cod]
+.grok/preview.pid
+.grok/preview.log
+release-artifacts/

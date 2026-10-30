@@ -690,7 +690,7 @@ export function applyMyRoster(snapshot: LeagueSnapshot, myRosterId: number): Lea
     teams[rosterId] = { ...team };
     delete teams[rosterId]!.weekly_streaming_recommendations;
   }
-  const fantasyAnalysis = { ...snapshot.fantasyAnalysis, teams };
+  const fantasyAnalysis: AnalysisRecord = { ...snapshot.fantasyAnalysis, teams };
   delete fantasyAnalysis.weekly_opportunity_by_player;
   const waiverAnalysis = presentWaiverAnalysis(fantasyAnalysis, snapshot.analysisWaiverPool ?? [], myRosterId);
   const actionableWaiverAnalysis = presentActionableWaiverAnalysis(
@@ -730,6 +730,7 @@ export function applyMyRoster(snapshot: LeagueSnapshot, myRosterId: number): Lea
 export function snapshotJson(snapshot: LeagueSnapshot) {
   const {
     markdown: _markdown,
+    projections: _projections,
     analysisWaiverPool: _pool,
     snapshotVersion,
     fantasyAnalysis,

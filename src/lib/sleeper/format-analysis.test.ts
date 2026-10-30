@@ -219,6 +219,7 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
   it("keeps analysis, waiver score ordering, recommendation urgency, and snapshot version unchanged with context", () => {
     const data = snapshot();
     const baseline = data.fantasyAnalysis;
+    assert.ok(data.actionableWaiverAnalysis);
     const candidateRows = data.actionableWaiverAnalysis.candidates as AnalysisRecord[];
     const orderedIds = candidateRows.map((candidate) => candidate.player_id);
     const scores = candidateRows.map((candidate) => candidate.waiver_value_score);
@@ -291,6 +292,7 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
     data.fantasyAnalysis.weekly_opportunity_by_player = {
       hunter: { target_week: 6, position: "TE", positional_rank: 8, opportunity: "good" },
     };
+    assert.ok(data.actionableWaiverAnalysis);
     data.actionableWaiverAnalysis.candidates = [{
       player_id: "hunter", name: "Hunter Henry", position: "TE", waiver_value_score: 42,
       team_need: "thin", league_scarcity: "moderate", currently_usable: true,

@@ -69,6 +69,8 @@ export type WeekMatchup = {
 };
 
 export type LeagueSnapshot = {
+  /** Live offensive projections; excluded from the version-3.2 JSON export. */
+  projections?: import('./projections.server').ProjectionData;
   fetchedAt: string;
   leagueId: string;
   leagueName: string;

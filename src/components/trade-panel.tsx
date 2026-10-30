@@ -2,7 +2,7 @@ import { ArrowLeftRight, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { analyzeTrade, type TeamTradeImpact, type TradeAnalysisResult } from "@/lib/sleeper/trade-analyzer";
+import { simulateTradeRosters, analyzeTrade, type TeamTradeImpact, type TradeAnalysisResult } from "@/lib/sleeper/trade-analyzer";
 import type { AnalyzedTradeExport } from "@/lib/sleeper/trade-markdown";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster } from "@/lib/sleeper/types";
 
@@ -159,6 +159,8 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
   const [partnerId, setPartnerId] = useState(initialPartner);
   const [sendIds, setSendIds] = useState<string[]>([]);
   const [receiveIds, setReceiveIds] = useState<string[]>([]);
+  const [dropA, setDropA] = useState<string[]>([]);
+  const [dropB, setDropB] = useState<string[]>([]);
   const [result, setResult] = useState<TradeAnalysisResult | null>(null);
   const partner =
     snapshot.teams.find((team) => team.rosterId === partnerId) ??
@@ -170,6 +172,8 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
     }
     setSendIds([]);
     setReceiveIds([]);
+    setDropA([]);
+    setDropB([]);
     setResult(null);
     onAnalyzedTrade(null);
   }, [myTeam.rosterId, snapshot, onAnalyzedTrade]);
@@ -177,6 +181,8 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
   useEffect(() => {
     setSendIds([]);
     setReceiveIds([]);
+    setDropA([]);
+    setDropB([]);
     setResult(null);
     onAnalyzedTrade(null);
   }, [partnerId, onAnalyzedTrade]);
@@ -188,6 +194,8 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
     setter((current) =>
       current.includes(playerId) ? current.filter((id) => id !== playerId) : [...current, playerId],
     );
+    setDropA([]);
+    setDropB([]);
     setResult(null);
     onAnalyzedTrade(null);
   }
@@ -195,21 +203,49 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
   function clear() {
     setSendIds([]);
     setReceiveIds([]);
+    setDropA([]);
+    setDropB([]);
     setResult(null);
     onAnalyzedTrade(null);
   }
 
-  function run() {
+  function run(nextDropA = dropA, nextDropB = dropB) {
     if (!partner || disabled) return;
     const request = {
       teamAId: myTeam.rosterId,
       teamBId: partner.rosterId,
       teamAPlayerIds: sendIds,
       teamBPlayerIds: receiveIds,
+      teamADropIds: nextDropA,
+      teamBDropIds: nextDropB,
     };
     const analyzed = analyzeTrade(snapshot, request);
     setResult(analyzed);
     onAnalyzedTrade(analyzed.valid ? { snapshot, request, result: analyzed } : null);
+  }
+
+  const transferred = result?.valid && partner ? simulateTradeRosters(myTeam, partner, sendIds, receiveIds) : null;
+  function dropPicker(key: 'teamA' | 'teamB') {
+    if (!result?.valid || !transferred) return null;
+    const chosen = key === 'teamA' ? dropA : dropB;
+    const total = result[key].rosterSize.requiredDrops + chosen.length;
+    if (!total) return null;
+    const team = transferred[key];
+    return <fieldset className="rounded-xl bg-card p-4 shadow-border" data-testid={`drops-${key}`}>
+      <legend className="px-2 text-sm font-semibold">{team.teamName}: choose {total} follow-up drop{total === 1 ? '' : 's'}</legend>
+      <p className="mb-3 text-sm text-muted-foreground">{chosen.length} of {total} selected. Results include these hypothetical drops; nothing is sent to Sleeper.</p>
+      <div className="max-h-64 space-y-2 overflow-auto">
+        {[...team.starters,...team.bench].map(player=><label key={player.playerId} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg bg-muted/55 px-3 py-2 text-sm">
+          <input type="checkbox" className="size-4 accent-[var(--color-accent)]" checked={chosen.includes(player.playerId)}
+            disabled={disabled || (!chosen.includes(player.playerId) && chosen.length >= total)}
+            onChange={()=>{
+              const next=chosen.includes(player.playerId) ? chosen.filter(id=>id!==player.playerId) : [...chosen,player.playerId];
+              if(key==='teamA') {setDropA(next);run(next,dropB);} else {setDropB(next);run(dropA,next);}
+            }} />
+          <span>{player.name} <span className="text-muted-foreground">· {player.position}</span></span>
+        </label>)}
+      </div>
+    </fieldset>;
   }
 
   if (!partner) {
@@ -245,7 +281,7 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
       </div>
 
       <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
-        <Button type="button" onClick={run} disabled={!canAnalyze} className="sm:w-48">
+        <Button type="button" onClick={() => run()} disabled={!canAnalyze} className="sm:w-48">
           <ArrowLeftRight />Analyze trade
         </Button>
         {!canAnalyze ? <p className="text-xs text-muted-foreground">{disabled ? "Wait for the roster refresh to finish." : "Select at least one player from each team."}</p> : null}
@@ -259,6 +295,7 @@ export function TradePanel({ snapshot, myRosterId, onAnalyzedTrade, disabled = f
 
       {result?.valid ? (
         <div className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2">{dropPicker("teamA")}{dropPicker("teamB")}</div>
           <div className="grid gap-4 lg:grid-cols-2">
             <ImpactCard impact={result.teamA} mine />
             <ImpactCard impact={result.teamB} mine={false} />

@@ -1,3 +1,4 @@
+/** @type {import("node:module").ResolveHook} */
 export async function resolve(specifier, context, nextResolve) {
   if ((specifier.startsWith("./") || specifier.startsWith("../")) && !/\.[cm]?[jt]s$|\.json$|\.mjs$/i.test(specifier)) {
     return nextResolve(`${specifier}.ts`, context);

@@ -1,16 +1,19 @@
+import { applyTradeValuation, type TradeValuation } from "./trade-valuation.ts";
 import { buildFantasyAnalysis, parseRosterConfiguration, type AnalysisRecord } from "./analysis/engine.ts";
 import { lineupChangeReason } from "./trade-presentation.ts";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster } from "./types.ts";
 
 const POSITIONS = ["QB", "RB", "WR", "TE"] as const;
 const NEED_ORDER: Record<string, number> = { low: 0, moderate: 1, high: 2 };
+// Availability need uses a different vocabulary from structural need.
+const AVAILABLE_NEED_ORDER: Record<string, number> = { low: 0, moderate: 1, thin: 2, critical: 3 };
 const DEPTH_ORDER: Record<string, number> = { deep: 0, adequate: 1, covered_by_flex: 1, thin: 2, short: 3 };
 const RISK_ORDER: Record<string, number> = { low: 0, moderate: 1, high: 2, very_high: 3 };
 const TIER_ORDER: Record<string, number> = { unknown: 0, deep_waiver: 1, fringe: 2, useful: 3, strong: 4, elite: 5 };
 
 export type TradeVerdict = "Strong improvement" | "Improvement" | "Mostly lateral" | "Risky" | "Worse";
 export type DeltaDirection = "improved" | "unchanged" | "worsened";
-export type TradeRequest = { teamAId: number; teamBId: number; teamAPlayerIds: string[]; teamBPlayerIds: string[] };
+export type TradeRequest = { teamAId: number; teamBId: number; teamAPlayerIds: string[]; teamBPlayerIds: string[]; teamADropIds?: string[]; teamBDropIds?: string[] };
 
 export type LineupChange = {
   context: "all_roster" | "available";
@@ -48,6 +51,8 @@ export type AvailabilityMove = {
 };
 
 export type TeamTradeImpact = {
+  valuation?: TradeValuation;
+  selectedDrops?: { playerId: string; playerName: string }[];
   rosterId: number;
   teamName: string;
   verdict: TradeVerdict;
@@ -253,7 +258,7 @@ function positionImpacts(before: AnalysisRecord, after: AnalysisRecord): Positio
     position,
     need: compareMetric(beforeNeed[position]?.need, afterNeed[position]?.need, NEED_ORDER),
     depth: compareMetric(beforeDepth[position]?.starting_depth, afterDepth[position]?.starting_depth, DEPTH_ORDER),
-    availableNeed: compareMetric(beforeUsableNeed[position]?.need, afterUsableNeed[position]?.need, NEED_ORDER),
+    availableNeed: compareMetric(beforeUsableNeed[position]?.need, afterUsableNeed[position]?.need, AVAILABLE_NEED_ORDER),
     availableDepth: compareMetric(beforeUsableDepth[position]?.starting_depth, afterUsableDepth[position]?.starting_depth, DEPTH_ORDER),
   }));
 }
@@ -316,6 +321,11 @@ function summarizeVerdict(
 ): { verdict: TradeVerdict; reasons: string[] } {
   const positiveLineup = lineupChanges.filter((change) => change.kind === "filled" || change.kind === "upgraded");
   const negativeLineup = lineupChanges.filter((change) => change.kind === "uncovered" || change.kind === "downgraded");
+  // The same change can appear in both contexts; retain both for display, but
+  // do not treat that repeated evidence as two separate lineup improvements.
+  const distinctPositiveCount = new Set(positiveLineup.map(change => JSON.stringify([
+    change.slot, change.ordinal, change.kind, change.beforePlayerId, change.afterPlayerId,
+  ]))).size;
   const improvedPositions = impacts.filter((impact) => [impact.need, impact.depth, impact.availableNeed, impact.availableDepth].includes("improved"));
   const worsenedPositions = impacts.filter((impact) => [impact.need, impact.depth, impact.availableNeed, impact.availableDepth].includes("worsened"));
   const increasedRisk = riskChanges.filter((change) => change.direction === "increased");
@@ -326,7 +336,7 @@ function summarizeVerdict(
   let verdict: TradeVerdict;
   if (!hasPositive && hasNegative) verdict = "Worse";
   else if (hasPositive && hasNegative) verdict = "Risky";
-  else if (positiveLineup.length >= 2 || improvedPositions.length >= 2) verdict = "Strong improvement";
+  else if (distinctPositiveCount >= 2 || improvedPositions.length >= 2) verdict = "Strong improvement";
   else if (hasPositive) verdict = "Improvement";
   else verdict = "Mostly lateral";
 
@@ -400,6 +410,18 @@ export function analyzeTrade(snapshot: LeagueSnapshot, request: TradeRequest): T
   const teamA = snapshot.teams.find((team) => team.rosterId === request.teamAId)!;
   const teamB = snapshot.teams.find((team) => team.rosterId === request.teamBId)!;
   const simulated = simulateTradeRosters(teamA, teamB, request.teamAPlayerIds, request.teamBPlayerIds);
+  const expectedSize = snapshot.rosterSlots.length + snapshot.benchSlots;
+  const selectedDrops: Record<'teamA' | 'teamB', {playerId: string; playerName: string}[]> = {teamA:[],teamB:[]};
+  for (const key of ['teamA','teamB'] as const) {
+    const ids = (key === 'teamA' ? request.teamADropIds : request.teamBDropIds) ?? [];
+    const active = activePlayers(simulated[key]);
+    const required = Math.max(active.length - expectedSize, 0);
+    if (new Set(ids).size !== ids.length || ids.length > required || ids.some(id => !active.some(p=>p.playerId===id))) {
+      return {valid:false,errors:[`${simulated[key].teamName}: choose distinct active players from the resulting roster, up to the required ${required} drops.`]};
+    }
+    selectedDrops[key] = ids.map(id=>({playerId:id,playerName:active.find(p=>p.playerId===id)!.name}));
+    simulated[key] = removePlayers(simulated[key], new Set(ids));
+  }
   const beforeTeams = snapshot.teams.map((team) => cloneTeam(team));
   const afterTeams = snapshot.teams.map((team) => {
     if (team.rosterId === teamA.rosterId) return simulated.teamA;
@@ -411,7 +433,7 @@ export function analyzeTrade(snapshot: LeagueSnapshot, request: TradeRequest): T
   const beforeAnalysis = beforeLeague.teams as Record<string, AnalysisRecord>;
   const afterAnalysis = afterLeague.teams as Record<string, AnalysisRecord>;
   const expectedRosterSize = snapshot.rosterSlots.length + snapshot.benchSlots;
-  return {
+  const result: Extract<TradeAnalysisResult, { valid: true }> = {
     valid: true,
     teamA: buildTeamImpact(
       { team: teamA, analysis: beforeAnalysis[String(teamA.rosterId)]! },
@@ -430,4 +452,16 @@ export function analyzeTrade(snapshot: LeagueSnapshot, request: TradeRequest): T
     futureReadinessIncluded: false,
     note: "Phase 1 reuses structural and current-availability analysis. Future-week readiness deltas are deferred to Phase 2.",
   };
+  for (const key of ['teamA','teamB'] as const) {
+    if (selectedDrops[key].length) {
+      result[key].selectedDrops=selectedDrops[key];
+      result[key].reasons.unshift(`Follow-up drops included: ${selectedDrops[key].map(p=>p.playerName).join(', ')}.`);
+    }
+  }
+  result.teamA = applyTradeValuation(snapshot, request, teamA, simulated.teamA, result.teamA);
+  result.teamB = applyTradeValuation(snapshot, request, teamB, simulated.teamB, result.teamB);
+  if (snapshot.projections) {
+    result.note = `Valuation basis: your team — ${result.teamA.valuation?.basis === 'projected_lineup' ? 'projected lineup' : 'structural fallback'}; other team — ${result.teamB.valuation?.basis === 'projected_lineup' ? 'projected lineup' : 'structural fallback'}. Core offensive points only; K/DEF excluded. Scoring exclusions: ${snapshot.projections.exclusions.join(', ') || 'none'}. The projection window is not a verified fantasy championship; structural depth details still use the existing rank model.`;
+  }
+  return result;
 }

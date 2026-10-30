@@ -1,3 +1,5 @@
+import {withProjectionEndWeek} from "@/lib/sleeper/projection-window";
+import { appendWaiverMarkdown, type WaiverExport } from "@/lib/sleeper/waiver-markdown";
 import { ReleaseInfo } from "@/components/release-info";
 import { useMutation } from "@tanstack/react-query";
 import { Check, Copy, Download, FileJson, LoaderCircle, RefreshCw } from "lucide-react";
@@ -59,7 +61,10 @@ function errorMessage(error: unknown): string {
 
 function formatFetchedAt(iso: string): string {
   try {
-    return new Intl.DateTimeFormat(undefined, {
+    return new Intl.DateTimeFormat("en-US", {
+      // The first browser render must match SSR regardless of viewer timezone.
+      timeZone: "UTC",
+      timeZoneName: "short",
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -75,9 +80,13 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
   const [myRosterId, setMyRosterId] = useState(initialSnapshot.myRosterId);
   const [tab, setTab] = useState<Tab>("rosters");
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(initialSnapshot);
+  const [projectionSource,setProjectionSource]=useState(initialSnapshot);
+  const [effectiveWeek,setEffectiveWeek]=useState<number|null>(null);
+  const [projectionEnd,setProjectionEnd]=useState<number|null>(null);
   const [tradeSession, setTradeSession] = useState(0);
   const [analyzedTrade, setAnalyzedTrade] = useState<AnalyzedTradeExport | null>(null);
-  const exportMarkdown = snapshot ? buildExportMarkdown(snapshot, analyzedTrade) : "";
+  const [waiverExport,setWaiverExport] = useState<WaiverExport | null>(null);
+  const exportMarkdown = snapshot ? appendWaiverMarkdown(buildExportMarkdown(snapshot, analyzedTrade),snapshot,waiverExport) : "";
   const [copied, setCopied] = useState(false);
 
   const fetchMutation = useMutation({
@@ -85,11 +94,19 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
       fetchLeagueRosters({ data: input }),
     onMutate: () => {
       setAnalyzedTrade(null);
+      setWaiverExport(null);
       setTradeSession((session) => session + 1);
     },
     onSuccess: (data) => {
       setAnalyzedTrade(null);
-      setSnapshot(data);
+      setWaiverExport(null);
+      setProjectionSource(data);
+      const keepEnd=projectionEnd!==null && data.leagueId===projectionSource.leagueId && data.season===projectionSource.season && data.projections && projectionEnd>=data.projections.fromWeek && projectionEnd<=data.projections.throughWeek;
+      setProjectionEnd(keepEnd?projectionEnd:null);
+      const next=keepEnd?withProjectionEndWeek(data,projectionEnd!):data;
+      const keepEffective=effectiveWeek!==null && data.leagueId===projectionSource.leagueId && data.season===projectionSource.season && next.projections && effectiveWeek>=next.projections.fromWeek && effectiveWeek<=next.projections.throughWeek;
+      setEffectiveWeek(keepEffective?effectiveWeek:null);
+      setSnapshot(keepEffective?{...next,projections:{...next.projections!,effectiveFromWeek:effectiveWeek!}}:next);
       setMyRosterId(data.myRosterId);
       window.localStorage.setItem(LEAGUE_ID_STORAGE_KEY, data.leagueId);
       window.localStorage.setItem(MY_ROSTER_STORAGE_KEY, String(data.myRosterId));
@@ -120,6 +137,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
 
   function setMine(rosterId: number) {
     setAnalyzedTrade(null);
+      setWaiverExport(null);
     setMyRosterId(rosterId);
     window.localStorage.setItem(MY_ROSTER_STORAGE_KEY, String(rosterId));
     setSnapshot((current) => (current ? applyMyRoster(current, rosterId) : current));
@@ -209,6 +227,34 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
             {snapshot ? "Refresh" : "Fetch"}
           </Button>
         </form>
+
+        {snapshot?.projections && projectionSource.projections ? <div className="mt-4 rounded-xl bg-card p-4 shadow-border">
+          <label className="block text-sm font-medium">Valuation end week
+            <select aria-label="Valuation end week" disabled={refreshing} className="mt-2 min-h-11 w-full rounded-md bg-muted px-3 text-foreground sm:w-48"
+              value={snapshot.projections.throughWeek} onChange={e=>{
+                const end=Number(e.target.value);setProjectionEnd(end);
+                const next=withProjectionEndWeek({...snapshot,projections:projectionSource.projections},end);
+                const effective=effectiveWeek!==null && effectiveWeek<=end ? effectiveWeek : null;
+                setEffectiveWeek(effective);
+                if(effective!==null)next.projections!.effectiveFromWeek=effective;
+                setAnalyzedTrade(null);setWaiverExport(null);setTradeSession(x=>x+1);setSnapshot(next);
+              }}>
+              {Array.from({length:projectionSource.projections.throughWeek-projectionSource.projections.fromWeek+1},(_,i)=>projectionSource.projections!.fromWeek+i).map(w=><option key={w} value={w}>Week {w}</option>)}
+            </select>
+          </label>
+          <label className="mt-3 block text-sm font-medium">Moves effective from
+            <select aria-label="Moves effective from" disabled={refreshing} className="mt-2 min-h-11 w-full rounded-md bg-muted px-3 text-foreground sm:w-48"
+              value={snapshot.projections.effectiveFromWeek ?? snapshot.projections.fromWeek} onChange={e=>{
+                const effective=Number(e.target.value);setEffectiveWeek(effective);
+                setSnapshot({...snapshot,projections:{...snapshot.projections!,effectiveFromWeek:effective}});
+                setAnalyzedTrade(null);setWaiverExport(null);setTradeSession(x=>x+1);
+              }}>
+              {Array.from({length:snapshot.projections.throughWeek-snapshot.projections.fromWeek+1},(_,i)=>snapshot.projections!.fromWeek+i).map(w=><option key={w} value={w}>Week {w}</option>)}
+            </select>
+          </label>
+          <p className="mt-2 text-xs text-muted-foreground">Set the first scoring week when the move can take effect after trade review or waiver processing. Started or uncertain weeks are still excluded. This is a scenario assumption, not a Sleeper transaction schedule.</p>
+          <p className="mt-2 text-xs text-muted-foreground">Choose your league’s final scoring week. This sets the trade and waiver comparison cutoff; it does not change Sleeper settings or verify the championship schedule.</p>
+        </div>:null}
 
         {snapshot ? (
           <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -308,7 +354,7 @@ export function RosterApp({ initialSnapshot }: { initialSnapshot: LeagueSnapshot
           </div>
         ) : null}
 
-        {snapshot && tab === "waivers" ? <WaiverPanel snapshot={snapshot} /> : null}
+        {snapshot && tab === "waivers" ? <WaiverPanel key={tradeSession} snapshot={snapshot} onComparison={setWaiverExport} disabled={refreshing} /> : null}
         {snapshot ? (
           <div hidden={tab !== "trade"}>
             <TradePanel key={tradeSession} snapshot={snapshot} myRosterId={myRosterId} onAnalyzedTrade={setAnalyzedTrade} disabled={refreshing} />

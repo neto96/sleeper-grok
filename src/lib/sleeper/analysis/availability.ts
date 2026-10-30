@@ -22,10 +22,11 @@ export type AvailabilityAssessment = {
   currently_usable: boolean;
 };
 
-type AvailabilityInput = Pick<
+// Missing provider fields are intentionally classified as unknown at runtime.
+type AvailabilityInput = Partial<Pick<
   AnalysisRecord,
   "position" | "status" | "injury_status" | "roster_status"
->;
+>>;
 
 function normalizeEmpty(value: unknown): unknown {
   return value === "" ? null : value;

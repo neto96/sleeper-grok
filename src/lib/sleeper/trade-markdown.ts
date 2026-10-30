@@ -26,6 +26,7 @@ function teamImpact(team: TeamTradeImpact): string[] {
   const lines = [`### ${plain(team.teamName)} — impact`, "", `- Verdict: **${plain(team.verdict)}**`,
     ...reasons.slice(0, 5).map((reason) => `- ${plain(reason)}`),
     `- Active roster size: ${size.before} → ${size.after} (limit ${size.expected}).`];
+  if (team.selectedDrops?.length) lines.push(`- Selected follow-up drops: ${names(team.selectedDrops.map(p=>p.playerName))}. Included in this result; no Sleeper transaction has been made.`);
   if (size.requiredDrops > 0) lines.push(`- Required drops: **${size.requiredDrops}**. Results are provisional until follow-up drops are resolved.`);
   for (const context of ["all_roster", "available"] as const) {
     const changes = team.lineupChanges.filter((change) => change.context === context);
@@ -69,7 +70,7 @@ export function buildTradeMarkdown(snapshot: LeagueSnapshot, request: TradeReque
     `- ${plain(result.teamA.teamName)} sends to ${plain(result.teamB.teamName)}: ${sentNames(request.teamAId, request.teamAPlayerIds)}.`,
     `- ${plain(result.teamB.teamName)} sends to ${plain(result.teamA.teamName)}: ${sentNames(request.teamBId, request.teamBPlayerIds)}.`, "",
     ...teamImpact(result.teamA), "", ...teamImpact(result.teamB), "",
-    "Phase 1 limitation: future-readiness deltas, including changes to future-week bye coverage, are not yet included.",
+    result.teamA.valuation || result.teamB.valuation ? plain(result.note) : "Phase 1 limitation: future-readiness deltas, including changes to future-week bye coverage, are not yet included.",
   ].join("\n");
 }
 

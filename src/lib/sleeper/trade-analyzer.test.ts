@@ -139,6 +139,50 @@ describe("trade simulation", () => {
 });
 
 describe("trade analyzer", () => {
+  it("counts an identical upgrade in both lineup contexts only once", () => {
+    const s = snapshot([team(1, "A", [player("a", "QB", 60)]), team(2, "B", [player("b", "QB", 20)])]);
+    s.rosterSlots = ["QB"];
+    const result = analyzeTrade(s, { teamAId: 1, teamBId: 2, teamAPlayerIds: ["a"], teamBPlayerIds: ["b"] });
+    assert.ok(result.valid);
+    assert.equal(result.teamA.lineupChanges.filter(change => change.kind === "upgraded").length, 2);
+    assert.equal(result.teamA.verdict, "Improvement");
+    assert.equal(result.teamB.verdict, "Worse");
+  });
+
+  it("still recognizes two distinct lineup upgrades as a strong improvement", () => {
+    const s = snapshot([
+      team(1, "A", [player("a-qb", "QB", 60), player("a-te", "TE", 70)]),
+      team(2, "B", [player("b-qb", "QB", 20), player("b-te", "TE", 30)]),
+    ]);
+    s.rosterSlots = ["QB", "TE"];
+    const result = analyzeTrade(s, { teamAId: 1, teamBId: 2, teamAPlayerIds: ["a-qb", "a-te"], teamBPlayerIds: ["b-qb", "b-te"] });
+    assert.ok(result.valid);
+    assert.equal(result.teamA.verdict, "Strong improvement");
+  });
+
+  it("reports critical-to-thin available need improvement and the reverse independently", () => {
+    const s = snapshot([team(1, "A", [player("a", "QB", 20, "Out")]), team(2, "B", [player("b", "QB", 20)])]);
+    s.rosterSlots = ["QB"];
+    const result = analyzeTrade(s, { teamAId: 1, teamBId: 2, teamAPlayerIds: ["a"], teamBPlayerIds: ["b"] });
+    assert.ok(result.valid);
+    assert.equal(result.teamA.positionImpact.find(row => row.position === "QB")?.availableNeed, "improved");
+    assert.equal(result.teamB.positionImpact.find(row => row.position === "QB")?.availableNeed, "worsened");
+    assert.equal(result.teamA.positionImpact.find(row => row.position === "QB")?.need, "unchanged");
+    assert.ok(result.teamB.availability.incoming.some(row => row.availability === "unavailable"));
+  });
+
+  it("recognizes relief from thin available depth and the reverse", () => {
+    const s = snapshot([
+      team(1, "A", [player("a", "QB", 20, "Out"), player("a-backup", "QB", 40)]),
+      team(2, "B", [player("b", "QB", 20), player("b-backup", "QB", 40)]),
+    ]);
+    s.rosterSlots = ["QB"];
+    const result = analyzeTrade(s, { teamAId: 1, teamBId: 2, teamAPlayerIds: ["a"], teamBPlayerIds: ["b"] });
+    assert.ok(result.valid);
+    assert.equal(result.teamA.positionImpact.find(row => row.position === "QB")?.availableNeed, "improved");
+    assert.equal(result.teamB.positionImpact.find(row => row.position === "QB")?.availableNeed, "worsened");
+  });
+
   it("evaluates both teams independently for a 1-for-1", () => {
     const result = analyzeTrade(snapshot(baseTeams()), {
       teamAId: 1,

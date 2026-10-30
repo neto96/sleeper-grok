@@ -7,6 +7,8 @@
     "nf3": "0.3.17"
   },
   "scripts": {
+    "test:browser": "node tests/browser/run.mjs",
+    "test:preview": "node tests/browser/server.mjs",
     "dev": "node scripts/with-app-env.mjs vite dev --host 0.0.0.0 --port 8080",
     "build": "node scripts/with-app-env.mjs vite build && npm run db:migrate",
     "db:migrate": "node scripts/migrate.mjs",
