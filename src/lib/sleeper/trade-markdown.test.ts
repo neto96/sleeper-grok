@@ -83,8 +83,8 @@ describe("trade Markdown export", () => {
       { playerId: "h", playerName: "Healthy Player", position: "WR", availability: "available", reason: "active" },
     ];
     const text = buildTradeMarkdown(trade.snapshot, trade.request, trade.result);
-    assert.match(text, /All-roster lineup: FLEX1: Receiver One → Runner Three/);
-    assert.match(text, /Availability-eligible lineup: FLEX1/);
+    assert.match(text, /Full-roster lineup: FLEX1: Receiver One → Runner Three/);
+    assert.match(text, /Best lineup now: FLEX1/);
     assert.match(text, /RB: all-roster need improved; available-player depth worsened/);
     assert.match(text, /Extra Depth added: Bench Player/);
     assert.match(text, /Safe to Move removed: New Starter/);
@@ -94,7 +94,7 @@ describe("trade Markdown export", () => {
     assert.doesNotMatch(text, /Healthy Player/);
   });
 
-  it("escapes roster text and limits supplied reasons without recalculating the verdict", () => {
+  it("escapes roster text and retains all supplied reasons without recalculating the verdict", () => {
     const trade = fixture();
     assert.ok(trade.result.valid);
     trade.result.teamA.teamName = "<Team>\n## Injected";
@@ -105,7 +105,8 @@ describe("trade Markdown export", () => {
     assert.ok(text.includes("&lt;Team&gt; ## Injected")); // Flattened, not a new heading.
     assert.ok(text.includes("\\[Player\\](https://example.com)"));
     assert.match(text, /Reason 4/);
-    assert.doesNotMatch(text, /Reason 5/);
+    assert.match(text, /Reason 5/);
+    assert.match(text, /Reason 6/);
     assert.match(text, /Mostly lateral/);
   });
 

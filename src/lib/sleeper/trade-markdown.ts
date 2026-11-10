@@ -21,16 +21,16 @@ function names(values: string[]): string {
 }
 function teamImpact(team: TeamTradeImpact): string[] {
   const size = team.rosterSize;
-  const reasons = [...team.reasons];
-  if (reasons.length < 2) reasons.push(`Active roster size changes from ${size.before} to ${size.after} (limit ${size.expected}).`);
+  const reasons = [...new Set(team.reasons)].filter(reason =>
+    reason !== `Requires ${size.requiredDrops} follow-up drop${size.requiredDrops === 1 ? "" : "s"} to reach the active roster limit.`);
   const lines = [`### ${plain(team.teamName)} — impact`, "", `- Verdict: **${plain(team.verdict)}**`,
-    ...reasons.slice(0, 5).map((reason) => `- ${plain(reason)}`),
+    ...reasons.map((reason) => `- ${plain(reason)}`),
     `- Active roster size: ${size.before} → ${size.after} (limit ${size.expected}).`];
   if (team.selectedDrops?.length) lines.push(`- Selected follow-up drops: ${names(team.selectedDrops.map(p=>p.playerName))}. Included in this result; no Sleeper transaction has been made.`);
   if (size.requiredDrops > 0) lines.push(`- Required drops: **${size.requiredDrops}**. Results are provisional until follow-up drops are resolved.`);
   for (const context of ["all_roster", "available"] as const) {
     const changes = team.lineupChanges.filter((change) => change.context === context);
-    if (changes.length) lines.push(`- ${context === "all_roster" ? "All-roster lineup" : "Availability-eligible lineup"}: ${changes.map((change) => `${plain(change.slot)}${change.ordinal}: ${plain(change.beforePlayerName ?? "Empty")} → ${plain(change.afterPlayerName ?? "Empty")} (${change.kind})`).join("; ")}.`);
+    if (changes.length) lines.push(`- ${context === "all_roster" ? "Full-roster lineup" : "Best lineup now"}: ${changes.map((change) => `${plain(change.slot)}${change.ordinal}: ${plain(change.beforePlayerName ?? "Empty")} → ${plain(change.afterPlayerName ?? "Empty")} (${change.kind})`).join("; ")}.`);
   }
   for (const impact of team.positionImpact) {
     const changes = ([

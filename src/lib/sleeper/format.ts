@@ -1,4 +1,5 @@
-import { APP_VERSION } from "./release.ts";
+import { presentRecommendations } from "./recommendation-presentation.ts";
+import { APP_VERSION, ANALYSIS_ENGINE_VERSION } from "./release.ts";
 import { targetWeekCandidates } from "./priority-candidates.ts";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "./priority-waivers.ts";
 import { needLabel, depthLabel, scarcityLabel, EXTRA_DEPTH_NOTE, SAFE_TO_MOVE_NOTE, REPLACEMENT_NOTE, AVAILABILITY_LINEUP_NOTE } from "./presentation.ts";
@@ -262,7 +263,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
   const analysis = snapshot.fantasyAnalysis;
   if (!analysis) return [];
   const lines: string[] = ["", "## Fantasy Analysis", ""];
-  lines.push("All roster includes every rostered player; available players reflects current availability.");
+  lines.push("Full roster includes everyone. Eligible now uses current status and roster eligibility, including Questionable players.");
   lines.push("");
   lines.push("### League Configuration");
   lines.push("");
@@ -290,7 +291,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
       const structural = scarcity?.[position]?.scarcity;
       const usable = usableScarcity?.[position]?.scarcity;
       if (structural == null && usable == null) continue;
-      lines.push(`- ${position}: all roster: ${md(scarcityLabel(structural))} · available players: ${md(scarcityLabel(usable))}`);
+      lines.push(`- ${position}: full roster: ${md(scarcityLabel(structural))} · eligible now: ${md(scarcityLabel(usable))}`);
     }
   }
   lines.push("");
@@ -306,10 +307,9 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
   if (!recommendations || recommendations.length === 0) {
     lines.push("- No urgent lineup or bye-week moves identified.");
   } else {
-    for (const action of recommendations) {
-      const urgency = String(action.urgency ?? "watch").replaceAll("_", " ").toUpperCase();
-      const label = `${urgency}${action.position_or_slot ? ` — ${action.position_or_slot}` : ""}${action.week != null ? `, Week ${action.week}` : ""}`;
-      lines.push(`- **${label}:** ${md(String(action.title ?? "Review roster"))}. ${md(String(action.reason ?? ""))}`);
+    for (const action of presentRecommendations(recommendations, snapshot.week)) {
+      const urgency = action.urgency.replaceAll("_", " ").toUpperCase();
+      lines.push(`- **${urgency} — ${md(action.title)}:** ${md(action.reason)}`);
     }
   }
   const weeklyStreaming = ((mine.weekly_streaming_recommendations ?? {}) as AnalysisRecord).actions as AnalysisRecord[] | undefined;
@@ -348,7 +348,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
   const availabilityPlayers = (availability.players ?? []) as AnalysisRecord[];
   const unavailable = availabilityPlayers.filter((player) => player.currently_usable === false);
   lines.push("#### Roster Availability");
-  if (unavailable.length === 0) lines.push("- No currently unusable rostered players.");
+  if (unavailable.length === 0) lines.push("- No players ruled out or ineligible.");
   for (const player of unavailable) {
     const state = player.injury_status ?? String(player.reason ?? "unknown_status").replaceAll("_", " ");
     lines.push(`- ${md(String(player.name ?? player.player_id ?? "Unknown player"))} — ${md(String(state))} — ${md(String(player.availability ?? "unknown"))}`);
@@ -361,7 +361,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
     const row = need[position];
     const usable = usableNeed[position];
     if (!row && !usable) continue;
-    lines.push(`- ${position}: all roster: ${md(needLabel(row?.need))} · available players: ${md(needLabel(usable?.need))}`);
+    lines.push(`- ${position}: full roster: ${md(needLabel(row?.need))} · eligible now: ${md(needLabel(usable?.need))}`);
   }
   lines.push("");
   lines.push("#### Strength & Depth");
@@ -375,7 +375,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
     const usableRating = usableStrength[position]?.rating;
     const usableLabel = usableDepth[position]?.starting_depth;
     if (!rating && !label && !usableRating && !usableLabel) continue;
-    lines.push(`- ${position}: all roster: ${md(String(rating ?? "unknown"))}/${md(depthLabel(label))} · available players: ${md(String(usableRating ?? "unknown"))}/${md(depthLabel(usableLabel))}`);
+    lines.push(`- ${position}: full roster: ${md(String(rating ?? "unknown"))}/${md(depthLabel(label))} · eligible now: ${md(String(usableRating ?? "unknown"))}/${md(depthLabel(usableLabel))}`);
   }
   lines.push("");
   const rosterConfiguration = analysis.roster_configuration as AnalysisRecord | undefined;
@@ -394,8 +394,8 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
     }
     lines.push("");
   };
-  renderLineup("Best Lineup (All Roster)", lineup);
-  renderLineup("Availability-Eligible Lineup", usableLineup);
+  renderLineup("Best Lineup (Full Roster)", lineup);
+  renderLineup("Best Lineup Now", usableLineup);
   lines.push(AVAILABILITY_LINEUP_NOTE, "");
 
   const protect = ((mine.player_protection ?? []) as AnalysisRecord[]).filter((player) => player.protection === "protect");
@@ -413,7 +413,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
   }
   const surplus = ((mine.roster_surplus ?? []) as AnalysisRecord[]).filter((player) => player.surplus_type === "surplus");
   lines.push("");
-  lines.push("#### Extra Depth (All Roster)");
+  lines.push("#### Bench Depth (Full Roster)");
   lines.push(EXTRA_DEPTH_NOTE);
   if (surplus.length === 0) lines.push("- None identified.");
   for (const player of surplus.slice(0, 8)) {
@@ -422,7 +422,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
   const actionableSurplus = ((availability.actionable_surplus ?? []) as AnalysisRecord[])
     .filter((player) => player.surplus_type === "surplus" || player.surplus_type === "replaceable");
   lines.push("");
-  lines.push("#### Safe to Move (Available Players)");
+  lines.push("#### Tradeable Depth");
   lines.push(SAFE_TO_MOVE_NOTE);
   if (actionableSurplus.length === 0) lines.push("- None identified.");
   for (const player of actionableSurplus.slice(0, 8)) {
@@ -438,7 +438,7 @@ function analysisMarkdown(snapshot: SnapshotContent): string[] {
     lines.push("");
     lines.push(REPLACEMENT_NOTE);
     lines.push("");
-    lines.push("| Player | Lineup-Rating Drop (All Roster) | Replacement (All Roster) | Lineup-Rating Drop (Available Players) | Replacement (Available Players) |");
+    lines.push("| Player | If Removed (Full Roster) | Replacement (Full Roster) | If Removed (Eligible Now) | Replacement (Eligible Now) |");
     lines.push("|---|---:|---|---:|---|");
     for (const structural of structuralCosts) {
       const usable = byId.get(String(structural.player_id));
@@ -478,7 +478,8 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
   lines.push("");
   lines.push("Sleeper league snapshot formatted for an LLM.");
   lines.push("");
-  lines.push(`- Analysis version: V${APP_VERSION}`);
+  lines.push(`- App version: V${APP_VERSION}`);
+  lines.push(`- Analysis engine: V${ANALYSIS_ENGINE_VERSION}`);
   lines.push(`- League: ${snapshot.leagueName}`);
   lines.push(`- League ID: \`${snapshot.leagueId}\``);
   lines.push(`- Season: ${snapshot.season} ${snapshot.sport.toUpperCase()} ${snapshot.seasonType} season`);
@@ -580,11 +581,12 @@ export function buildMarkdown(snapshot: SnapshotContent): string {
   const opportunityByPlayer = (snapshot.fantasyAnalysis.weekly_opportunity_by_player ?? {}) as Record<string, AnalysisRecord>;
   const priorityGroups = priorityWaiverGroups(snapshot);
   for (const group of priorityGroups) {
-    lines.push(`### ${md(group.title)}`, "");
+    lines.push(`### Need now: ${md(group.slot)}${group.week != null ? ` · Week ${group.week}` : ""}`, "");
     if (group.candidates.length === 0) lines.push("No available candidates found for this need.");
     else group.candidates.forEach((player, index) => lines.push(`${index + 1}. ${md(String(player.name))}${player.target_week_bye_status === "unknown" ? " (target-week bye status unknown)" : ""}${player.availability === "uncertain" ? " (Questionable)" : ""}`));
-    lines.push("", `_${PRIORITY_WAIVER_NOTE}_`, "");
+    lines.push("");
   }
+  if (priorityGroups.length) lines.push(`_${PRIORITY_WAIVER_NOTE}_`, "");
   const waiver = snapshot.actionableWaiverAnalysis;
   const candidates = Array.isArray(waiver?.candidates) ? (waiver.candidates as AnalysisRecord[]) : [];
   if (waiver?.available && candidates.length > 0) {

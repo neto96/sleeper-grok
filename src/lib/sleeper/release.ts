@@ -1,9 +1,19 @@
 /** App release version; separate from the backward-compatible snapshot format. */
-export const APP_VERSION = "3.5.1";
+export const APP_VERSION = "3.6.1";
+/** Structural fantasy-analysis engine; projection policy is versioned separately. */
+export const ANALYSIS_ENGINE_VERSION = "3.5.1";
 
 export const CHANGELOG = [
   {
     version: APP_VERSION,
+    changes: ["Shorter next moves, with repeated depth warnings grouped by week.", "Decision-first trade summaries and expandable roster detail.", "Clearer app and analysis-engine versions."],
+  },
+  {
+    version: "3.6",
+    changes: ["Added Trade Analyzer and projection-based trade and waiver valuation."],
+  },
+  {
+    version: ANALYSIS_ENGINE_VERSION,
     changes: [
       "Fixed empty starter-slot alignment.",
       "Improved future-week waiver recommendations and bye checks.",

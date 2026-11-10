@@ -1,3 +1,4 @@
+import { RecommendationList } from "@/components/recommendation-list";
 import { Badge } from "@/components/ui/badge";
 import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
 
@@ -97,13 +98,7 @@ function replacementText(row: AnalysisRecord | undefined): string {
   if (!row) return "—";
   const level = display(row.replacement_cost);
   const replacement = row.replacement_player == null ? "none" : String(row.replacement_player);
-  return `${display(row.score_difference)} rating drop (${level}) · replacement: ${replacement}`;
-}
-
-function urgencyVariant(value: unknown) {
-  if (value === "act_now") return "injury" as const;
-  if (value === "plan_ahead") return "accent" as const;
-  return "default" as const;
+  return `${display(row.score_difference)} rating points lost (${level}) · replacement: ${replacement}`;
 }
 
 export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boolean }) {
@@ -153,23 +148,7 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
         <div className="mt-3 space-y-4 text-sm">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recommended Next Moves</p>
-            {recommendations.length === 0 ? (
-              <p className="mt-1 text-muted-foreground">No urgent lineup or bye-week moves identified.</p>
-            ) : (
-              <ul className="mt-1 space-y-2">
-                {recommendations.slice(0, 6).map((action, index) => (
-                  <li key={`${action.position_or_slot}-${action.week}-${index}`} className="flex items-start gap-2">
-                    <Badge variant={urgencyVariant(action.urgency)} className="shrink-0">
-                      {String(action.urgency).replaceAll("_", " ").toUpperCase()}
-                    </Badge>
-                    <span>
-                      <span className="font-medium">{String(action.title)}</span>
-                      <span className="ml-1 text-muted-foreground">{String(action.reason)}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <RecommendationList actions={recommendations} currentWeek={Number(record(team.future_readiness).horizon_start_week) || undefined} />
             {weeklyStreaming.length > 0 ? (
               <>
                 <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Weekly Streaming Options</p>
@@ -199,7 +178,7 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Availability</p>
             {unavailable.length === 0 ? (
-              <p className="mt-1 text-muted-foreground">No currently unusable rostered players.</p>
+              <p className="mt-1 text-muted-foreground">No players ruled out or ineligible.</p>
             ) : (
               <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
                 {unavailable.map((player, index) => (
@@ -220,8 +199,8 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
               {OFFENSE.map((position) => (
                 <li key={position} className="flex flex-wrap items-center gap-x-2">
                   <span className="w-7 font-medium">{position}</span>
-                  <span className="text-muted-foreground">All roster: {needLabel(record(team.position_need && record(team.position_need)[position]).need)}</span>
-                  <span className="text-muted-foreground">· Available players: {needLabel(record(usableNeed[position]).need)}</span>
+                  <span className="text-muted-foreground">Full roster: {needLabel(record(team.position_need && record(team.position_need)[position]).need)}</span>
+                  <span className="text-muted-foreground">· Eligible now: {needLabel(record(usableNeed[position]).need)}</span>
                 </li>
               ))}
             </ul>
@@ -233,24 +212,65 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
           </div>
 
           <div>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Protect</p>
+            {protect.length === 0 ? (
+              <p className="mt-1 text-muted-foreground">None.</p>
+            ) : (
+              <p className="mt-1 text-pretty text-muted-foreground">
+                {protect.map((player, index) => {
+                  const status = unavailableById.get(String(player.player_id));
+                  const context = status
+                    ? ` · ${AVAILABILITY_LABELS[String(status.reason)] ?? display(status.reason)}`
+                    : "";
+                  return `${index > 0 ? ", " : ""}${String(player.name)}${context}`;
+                })}
+                .
+              </p>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bench Depth (Full Roster)</p>
+              <p className="mt-1 text-xs text-muted-foreground">{EXTRA_DEPTH_NOTE}</p>
+              <p className="mt-1 text-muted-foreground">
+                {structuralSurplus.length > 0
+                  ? structuralSurplus.map((player) => `${player.name} (${player.position})`).join(", ")
+                  : "None."}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tradeable Depth</p>
+              <p className="mt-1 text-xs text-muted-foreground">{SAFE_TO_MOVE_NOTE}</p>
+              <p className="mt-1 text-muted-foreground">
+                {actionableSurplus.length > 0
+                  ? actionableSurplus.map((player) => `${player.name} (${player.position})`).join(", ")
+                  : "None."}
+              </p>
+            </div>
+          </div>
+          <details>
+            <summary className="min-h-11 cursor-pointer py-3 font-medium">Lineups, depth &amp; replacement detail</summary>
+            <div className="space-y-4">
+          <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Strength &amp; Depth</p>
             <ul className="mt-1 grid gap-1 sm:grid-cols-2">
               {OFFENSE.map((position) => (
                 <li key={position} className="flex flex-wrap items-center gap-x-2">
                   <span className="w-7 font-medium">{position}</span>
                   <span className="text-muted-foreground">
-                    All roster: {display(record(structuralStrength[position]).rating)} / {depthLabel(record(structuralDepth[position]).starting_depth)}
+                    Full roster: {display(record(structuralStrength[position]).rating)} / {depthLabel(record(structuralDepth[position]).starting_depth)}
                   </span>
                   <span className="text-muted-foreground">
-                    · Available players: {display(record(usableStrength[position]).rating)} / {depthLabel(record(usableDepth[position]).starting_depth)}
+                    · Eligible now: {display(record(usableStrength[position]).rating)} / {depthLabel(record(usableDepth[position]).starting_depth)}
                   </span>
                 </li>
               ))}
             </ul>
           </div>
 
-          <Lineup title="Best Lineup (All Roster)" lineup={structuralLineup} coverage={coverage} />
-          <Lineup title="Availability-Eligible Lineup" lineup={usableLineup} coverage={coverage} />
+          <Lineup title="Best Lineup (Full Roster)" lineup={structuralLineup} coverage={coverage} />
+          <Lineup title="Best Lineup Now" lineup={usableLineup} coverage={coverage} />
           <p className="text-xs text-muted-foreground">{AVAILABILITY_LINEUP_NOTE}</p>
 
           <div>
@@ -263,52 +283,16 @@ export function RosterAnalysis({ team, open }: { team: AnalysisRecord; open: boo
                 {[...costRows.values()].map(({ player, structural, usable }, index) => (
                   <li key={String(player.player_id ?? `${player.name}-${index}`)} className="min-w-0">
                     <span className="font-medium">{String(player.name ?? player.player_id ?? "Unknown player")}</span>
-                    <span className="ml-2 text-muted-foreground">All roster: {replacementText(structural)}</span>
-                    <span className="ml-2 text-muted-foreground">· Available players: {replacementText(usable)}</span>
+                    <span className="ml-2 text-muted-foreground">Full roster: {replacementText(structural)}</span>
+                    <span className="ml-2 text-muted-foreground">· Eligible now: {replacementText(usable)}</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
 
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Protect</p>
-            {protect.length === 0 ? (
-              <p className="mt-1 text-muted-foreground">None.</p>
-            ) : (
-              <p className="mt-1 text-pretty text-muted-foreground">
-                {protect.slice(0, 4).map((player, index) => {
-                  const status = unavailableById.get(String(player.player_id));
-                  const context = status
-                    ? ` · ${AVAILABILITY_LABELS[String(status.reason)] ?? display(status.reason)}`
-                    : "";
-                  return `${index > 0 ? ", " : ""}${String(player.name)} · ${display(player.protection)}${context}`;
-                })}
-                .
-              </p>
-            )}
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Extra Depth (All Roster)</p>
-              <p className="mt-1 text-xs text-muted-foreground">{EXTRA_DEPTH_NOTE}</p>
-              <p className="mt-1 text-muted-foreground">
-                {structuralSurplus.length > 0
-                  ? structuralSurplus.slice(0, 4).map((player) => `${player.name} (${player.position})`).join(", ")
-                  : "None."}
-              </p>
             </div>
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Safe to Move (Available Players)</p>
-              <p className="mt-1 text-xs text-muted-foreground">{SAFE_TO_MOVE_NOTE}</p>
-              <p className="mt-1 text-muted-foreground">
-                {actionableSurplus.length > 0
-                  ? actionableSurplus.slice(0, 4).map((player) => `${player.name} (${player.position})`).join(", ")
-                  : "None."}
-              </p>
-            </div>
-          </div>
+          </details>
         </div>
       ) : null}
     </section>

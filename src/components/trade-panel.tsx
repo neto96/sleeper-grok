@@ -1,3 +1,4 @@
+import { tradeSummary } from "@/lib/sleeper/trade-presentation";
 import { ArrowLeftRight, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +72,7 @@ function ImpactCard({ impact, mine }: { impact: TeamTradeImpact; mine: boolean }
   const changedPositions = impact.positionImpact.filter((row) =>
     [row.need, row.depth, row.availableNeed, row.availableDepth].some((value) => value !== "unchanged"),
   );
+  const summary = tradeSummary(impact);
   const positive = impact.verdict === "Strong improvement" || impact.verdict === "Improvement";
   return (
     <article className="rounded-xl bg-card p-4 shadow-border">
@@ -87,9 +89,14 @@ function ImpactCard({ impact, mine }: { impact: TeamTradeImpact; mine: boolean }
       </div>
 
       <ul className="mt-4 space-y-1.5 text-sm text-foreground">
-        {impact.reasons.map((reason) => <li key={reason}>• {reason}</li>)}
+        {summary.map((reason) => <li key={reason}>• {reason}</li>)}
       </ul>
 
+      <details className="mt-3 rounded-lg bg-muted/45 px-3">
+        <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Roster effects &amp; verdict detail</summary>
+        <ul className="space-y-1 text-sm text-muted-foreground">
+          {impact.reasons.filter(reason => !summary.includes(reason)).map(reason => <li key={reason}>{reason}</li>)}
+        </ul>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg bg-muted/55 p-3">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Roster size</p>
@@ -104,7 +111,7 @@ function ImpactCard({ impact, mine }: { impact: TeamTradeImpact; mine: boolean }
         <div className="rounded-lg bg-muted/55 p-3">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">Depth changes</p>
           {changedPositions.length === 0 ? (
-            <p className="mt-1 text-sm text-muted-foreground">No meaningful QB/RB/WR/TE change.</p>
+            <p className="mt-1 text-sm text-muted-foreground">No QB/RB/WR/TE depth change.</p>
           ) : (
             <div className="mt-1 space-y-1 text-sm">
               {changedPositions.map((row) => (
@@ -117,13 +124,15 @@ function ImpactCard({ impact, mine }: { impact: TeamTradeImpact; mine: boolean }
         </div>
       </div>
 
+      </details>
+
       {impact.lineupChanges.length > 0 ? (
         <details className="mt-4 rounded-lg bg-muted/45 p-3">
-          <summary className="cursor-pointer text-sm font-medium">Starting-lineup changes</summary>
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Starting-lineup changes</summary>
           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
             {impact.lineupChanges.map((change, index) => (
               <p key={`${change.context}-${change.slot}-${change.ordinal}-${index}`}>
-                {change.context === "available" ? "Available" : "All roster"} {change.slot}{change.ordinal}:{" "}
+                {change.context === "available" ? "Available" : "Full roster"} {change.slot}{change.ordinal}:{" "}
                 {change.beforePlayerName ?? "Empty"} → {change.afterPlayerName ?? "Empty"} ({change.kind})
               </p>
             ))}
@@ -137,7 +146,7 @@ function ImpactCard({ impact, mine }: { impact: TeamTradeImpact; mine: boolean }
         impact.surplusChanges.safeToMoveRemoved.length > 0 ||
         impact.replacementRiskChanges.length > 0) ? (
         <details className="mt-3 rounded-lg bg-muted/45 p-3">
-          <summary className="cursor-pointer text-sm font-medium">Depth and replacement detail</summary>
+          <summary className="min-h-11 cursor-pointer py-3 text-sm font-medium">Depth and replacement detail</summary>
           <div className="mt-2 space-y-1 text-sm text-muted-foreground">
             {impact.surplusChanges.extraDepthAdded.length > 0 ? <p>New extra depth: {impact.surplusChanges.extraDepthAdded.join(", ")}</p> : null}
             {impact.surplusChanges.extraDepthRemoved.length > 0 ? <p>No longer extra depth: {impact.surplusChanges.extraDepthRemoved.join(", ")}</p> : null}

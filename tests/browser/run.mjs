@@ -39,6 +39,21 @@ try {
     const baseline = await markdown();
     assert.ok(!baseline.includes("## Trade Analysis"));
     check(`${name}: baseline snapshot renders`);
+    await tab("Rosters");
+    const rosterDetail = page.locator("summary").filter({ hasText: "Lineups, depth & replacement detail" }).first();
+    assert.equal(await rosterDetail.locator("..").getAttribute("open"), null);
+    await rosterDetail.focus();
+    await page.keyboard.press("Enter");
+    await page.getByText("Best Lineup Now", { exact: true }).first().waitFor();
+    assert.notEqual(await rosterDetail.locator("..").getAttribute("open"), null);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true);
+    await page.screenshot({ path: `${screenshots}/${name}-roster.png`, fullPage: true, animations: "disabled" });
+    await rosterDetail.click();
+    check(`${name}: roster detail expands by keyboard; no horizontal overflow`);
+    await tab("Waivers");
+    assert.ok(await page.getByText("Options match the position and known availability. Check bye weeks and game status before adding.", { exact:true }).count() <= 1);
+    check(`${name}: waiver guidance is shared once`);
+
     async function analyze(uneven = false) {
       await tab("Trade");
       await page.getByRole("button", { name: "Clear", exact: true }).click();
@@ -52,6 +67,15 @@ try {
       await page.getByText("Phase 1 reuses structural and current-availability analysis.", { exact: false }).waitFor();
     }
     await analyze(true);
+    const impact = page.locator("article").first();
+    assert.ok(await impact.locator(":scope > ul > li").count() <= 3);
+    const effectDetail = impact.locator("summary").filter({hasText:"Roster effects & verdict detail"});
+    assert.equal(await effectDetail.locator("..").getAttribute("open"), null);
+    await effectDetail.click();
+    assert.notEqual(await effectDetail.locator("..").getAttribute("open"), null);
+    await effectDetail.click();
+    check(`${name}: trade shows at most three effects with full detail available`);
+
     const trade = await markdown();
     assert.ok(trade.startsWith(baseline));
     for (const text of ["## Trade Analysis", "Alpha sends to Beta", "Beta sends to Alpha", "Required drops: **2**", "future-readiness deltas"]) assert.ok(trade.includes(text), text);

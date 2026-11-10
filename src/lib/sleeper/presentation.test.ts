@@ -5,8 +5,8 @@ import { needLabel, depthLabel, scarcityLabel } from "./presentation.ts";
 it("describes need without equating a rating with an empty starting slot", () => {
   assert.equal(needLabel("critical"), "Urgent need");
   assert.equal(needLabel("thin"), "Could use depth");
-  assert.equal(depthLabel("thin"), "Limited backup depth");
-  assert.equal(depthLabel("covered_by_flex"), "Covered through FLEX");
+  assert.equal(depthLabel("thin"), "Thin depth");
+  assert.equal(depthLabel("covered_by_flex"), "FLEX cover");
   assert.doesNotMatch(needLabel("critical"), /no starter/i);
 });
 

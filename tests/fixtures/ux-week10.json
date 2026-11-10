@@ -1,0 +1,681 @@
+{
+  "capturedAt": "2026-11-10T06:31:13.680Z",
+  "season": "2026",
+  "week": 10,
+  "actions": [
+    {
+      "category": "bye_week",
+      "urgency": "act_now",
+      "position_or_slot": "WR",
+      "week": 10,
+      "title": "Add a WR for Week 10",
+      "reason": "Jaylen Waddle is on bye and no usable replacement is rostered. Best available options: Brian Thomas Jr., Quentin Johnston, and Ja'Kobi Lane. No clearly safe drop identified.",
+      "related_player_ids": [
+        "7526",
+        "11620",
+        "11631",
+        "9754",
+        "13293"
+      ],
+      "recommended_drop": null
+    },
+    {
+      "category": "def_stream",
+      "urgency": "act_now",
+      "position_or_slot": "DEF",
+      "week": 11,
+      "title": "Add a DEF for Week 11",
+      "reason": "New England Patriots is on bye and no usable replacement is rostered. No clearly safe drop identified.",
+      "related_player_ids": [
+        "NE"
+      ],
+      "recommended_drop": null
+    },
+    {
+      "category": "bye_week",
+      "urgency": "act_now",
+      "position_or_slot": "FLEX",
+      "week": 11,
+      "title": "Add a FLEX for Week 11",
+      "reason": "Josh Jacobs is on bye and no usable replacement is rostered. Best available options: Oronde Gadsden, Dalton Schultz, and Juwan Johnson. No clearly safe drop identified.",
+      "related_player_ids": [
+        "5850",
+        "12469",
+        "5859",
+        "12493",
+        "5001",
+        "7002"
+      ],
+      "recommended_drop": null
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "QB",
+      "week": 10,
+      "title": "QB coverage is thin for Week 10",
+      "reason": "Joe Burrow is your only available QB for Week 10. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "6770"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "TE",
+      "week": 10,
+      "title": "TE coverage is thin for Week 10",
+      "reason": "Sam LaPorta is your only available TE for Week 10. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "10859"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "QB",
+      "week": 11,
+      "title": "QB coverage is thin for Week 11",
+      "reason": "Joe Burrow is your only available QB for Week 11. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "6770"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "TE",
+      "week": 11,
+      "title": "TE coverage is thin for Week 11",
+      "reason": "Sam LaPorta is your only available TE for Week 11. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "10859"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "QB",
+      "week": 12,
+      "title": "QB coverage is thin for Week 12",
+      "reason": "Joe Burrow is your only available QB for Week 12. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "6770"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "TE",
+      "week": 12,
+      "title": "TE coverage is thin for Week 12",
+      "reason": "Sam LaPorta is your only available TE for Week 12. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "10859"
+      ]
+    },
+    {
+      "category": "bye_week",
+      "urgency": "watch",
+      "position_or_slot": "FLEX",
+      "week": 13,
+      "title": "Plan for a FLEX for Week 13",
+      "reason": "Braelon Allen is on bye and no usable replacement is rostered. Best available options: Oronde Gadsden, Dalton Schultz, and Juwan Johnson.",
+      "related_player_ids": [
+        "11576",
+        "13424",
+        "12493",
+        "5001",
+        "7002"
+      ]
+    },
+    {
+      "category": "k_stream",
+      "urgency": "watch",
+      "position_or_slot": "K",
+      "week": 13,
+      "title": "Add a K for Week 13",
+      "reason": "Spencer Shrader is on bye and no usable replacement is rostered.",
+      "related_player_ids": [
+        "12185"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "QB",
+      "week": 13,
+      "title": "QB coverage is thin for Week 13",
+      "reason": "Joe Burrow is your only available QB for Week 13. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "6770"
+      ]
+    },
+    {
+      "category": "bye_week",
+      "urgency": "watch",
+      "position_or_slot": "RB",
+      "week": 13,
+      "title": "Plan for a RB for Week 13",
+      "reason": "Braelon Allen is on bye and no usable replacement is rostered. Best available options: Chris Rodriguez Jr., Kimani Vidal, and Keaton Mitchell.",
+      "related_player_ids": [
+        "11576",
+        "13424",
+        "10219",
+        "11647",
+        "9511"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "TE",
+      "week": 13,
+      "title": "TE coverage is thin for Week 13",
+      "reason": "Sam LaPorta is your only available TE for Week 13. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "10859"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "QB",
+      "week": 14,
+      "title": "QB coverage is thin for Week 14",
+      "reason": "Joe Burrow is your only available QB for Week 14. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "6770"
+      ]
+    },
+    {
+      "category": "depth",
+      "urgency": "watch",
+      "position_or_slot": "TE",
+      "week": 14,
+      "title": "TE coverage is thin for Week 14",
+      "reason": "Sam LaPorta is your only available TE for Week 14. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.",
+      "related_player_ids": [
+        "10859"
+      ]
+    }
+  ],
+  "impacts": [
+    {
+      "rosterId": 3,
+      "teamName": "Selected team",
+      "verdict": "Risky",
+      "reasons": [
+        "Structural fallback: Resolve follow-up drops before using projected valuation.",
+        "All-roster lineup: RB2 improves from Braelon Allen to Kenneth Walker III.",
+        "Available lineup: FLEX1 improves from Seth McGowan to Dylan Sampson.",
+        "RB depth or need improves.",
+        "Requires 1 follow-up drop to reach the active roster limit."
+      ],
+      "rosterSize": {
+        "before": 15,
+        "after": 16,
+        "expected": 15,
+        "overBy": 1,
+        "underBy": 0,
+        "requiredDrops": 1
+      },
+      "lineupChanges": [
+        {
+          "context": "all_roster",
+          "slot": "QB",
+          "ordinal": 1,
+          "kind": "changed",
+          "beforePlayerId": "6770",
+          "beforePlayerName": "Joe Burrow",
+          "afterPlayerId": "11564",
+          "afterPlayerName": "Drake Maye"
+        },
+        {
+          "context": "all_roster",
+          "slot": "RB",
+          "ordinal": 2,
+          "kind": "upgraded",
+          "beforePlayerId": "11576",
+          "beforePlayerName": "Braelon Allen",
+          "afterPlayerId": "8151",
+          "afterPlayerName": "Kenneth Walker III"
+        },
+        {
+          "context": "available",
+          "slot": "FLEX",
+          "ordinal": 1,
+          "kind": "upgraded",
+          "beforePlayerId": "13424",
+          "beforePlayerName": "Seth McGowan",
+          "afterPlayerId": "12469",
+          "afterPlayerName": "Dylan Sampson"
+        },
+        {
+          "context": "available",
+          "slot": "QB",
+          "ordinal": 1,
+          "kind": "changed",
+          "beforePlayerId": "6770",
+          "beforePlayerName": "Joe Burrow",
+          "afterPlayerId": "11564",
+          "afterPlayerName": "Drake Maye"
+        },
+        {
+          "context": "available",
+          "slot": "RB",
+          "ordinal": 1,
+          "kind": "upgraded",
+          "beforePlayerId": "11576",
+          "beforePlayerName": "Braelon Allen",
+          "afterPlayerId": "8151",
+          "afterPlayerName": "Kenneth Walker III"
+        },
+        {
+          "context": "available",
+          "slot": "RB",
+          "ordinal": 2,
+          "kind": "changed",
+          "beforePlayerId": "12469",
+          "beforePlayerName": "Dylan Sampson",
+          "afterPlayerId": "11576",
+          "afterPlayerName": "Braelon Allen"
+        }
+      ],
+      "positionImpact": [
+        {
+          "position": "QB",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "unchanged",
+          "availableDepth": "unchanged"
+        },
+        {
+          "position": "RB",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "improved",
+          "availableDepth": "unchanged"
+        },
+        {
+          "position": "WR",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "unchanged",
+          "availableDepth": "unchanged"
+        },
+        {
+          "position": "TE",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "unchanged",
+          "availableDepth": "unchanged"
+        }
+      ],
+      "replacementRiskChanges": [],
+      "surplusChanges": {
+        "extraDepthAdded": [
+          "Braelon Allen"
+        ],
+        "extraDepthRemoved": [],
+        "safeToMoveAdded": [],
+        "safeToMoveRemoved": []
+      },
+      "availability": {
+        "incoming": [
+          {
+            "playerId": "11564",
+            "playerName": "Drake Maye",
+            "position": "QB",
+            "availability": "available",
+            "reason": "active"
+          },
+          {
+            "playerId": "8151",
+            "playerName": "Kenneth Walker III",
+            "position": "RB",
+            "availability": "available",
+            "reason": "active"
+          }
+        ],
+        "outgoing": [
+          {
+            "playerId": "6770",
+            "playerName": "Joe Burrow",
+            "position": "QB",
+            "availability": "available",
+            "reason": "active"
+          }
+        ]
+      },
+      "potentialDrops": [],
+      "valuation": {
+        "basis": "structural_fallback",
+        "reason": "Resolve follow-up drops before using projected valuation.",
+        "meanDelta": null,
+        "comparableWeeks": 0,
+        "totalWeeks": 9
+      }
+    },
+    {
+      "rosterId": 11,
+      "teamName": "Partner",
+      "verdict": "Worse",
+      "reasons": [
+        "Structural fallback: Complete projected lineups are unavailable for every week in the window.",
+        "Both lineups: RB2 drops from Bucky Irving to Kenny Gainwell.",
+        "RB depth or need worsens."
+      ],
+      "rosterSize": {
+        "before": 15,
+        "after": 14,
+        "expected": 15,
+        "overBy": 0,
+        "underBy": 1,
+        "requiredDrops": 0
+      },
+      "lineupChanges": [
+        {
+          "context": "all_roster",
+          "slot": "QB",
+          "ordinal": 1,
+          "kind": "changed",
+          "beforePlayerId": "11564",
+          "beforePlayerName": "Drake Maye",
+          "afterPlayerId": "6770",
+          "afterPlayerName": "Joe Burrow"
+        },
+        {
+          "context": "all_roster",
+          "slot": "RB",
+          "ordinal": 1,
+          "kind": "changed",
+          "beforePlayerId": "8151",
+          "beforePlayerName": "Kenneth Walker III",
+          "afterPlayerId": "11584",
+          "afterPlayerName": "Bucky Irving"
+        },
+        {
+          "context": "all_roster",
+          "slot": "RB",
+          "ordinal": 2,
+          "kind": "downgraded",
+          "beforePlayerId": "11584",
+          "beforePlayerName": "Bucky Irving",
+          "afterPlayerId": "7567",
+          "afterPlayerName": "Kenny Gainwell"
+        },
+        {
+          "context": "available",
+          "slot": "QB",
+          "ordinal": 1,
+          "kind": "changed",
+          "beforePlayerId": "11564",
+          "beforePlayerName": "Drake Maye",
+          "afterPlayerId": "6770",
+          "afterPlayerName": "Joe Burrow"
+        },
+        {
+          "context": "available",
+          "slot": "RB",
+          "ordinal": 1,
+          "kind": "changed",
+          "beforePlayerId": "8151",
+          "beforePlayerName": "Kenneth Walker III",
+          "afterPlayerId": "11584",
+          "afterPlayerName": "Bucky Irving"
+        },
+        {
+          "context": "available",
+          "slot": "RB",
+          "ordinal": 2,
+          "kind": "downgraded",
+          "beforePlayerId": "11584",
+          "beforePlayerName": "Bucky Irving",
+          "afterPlayerId": "7567",
+          "afterPlayerName": "Kenny Gainwell"
+        }
+      ],
+      "positionImpact": [
+        {
+          "position": "QB",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "unchanged",
+          "availableDepth": "unchanged"
+        },
+        {
+          "position": "RB",
+          "need": "unchanged",
+          "depth": "worsened",
+          "availableNeed": "unchanged",
+          "availableDepth": "worsened"
+        },
+        {
+          "position": "WR",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "unchanged",
+          "availableDepth": "unchanged"
+        },
+        {
+          "position": "TE",
+          "need": "unchanged",
+          "depth": "unchanged",
+          "availableNeed": "unchanged",
+          "availableDepth": "unchanged"
+        }
+      ],
+      "replacementRiskChanges": [],
+      "surplusChanges": {
+        "extraDepthAdded": [],
+        "extraDepthRemoved": [
+          "Kenny Gainwell"
+        ],
+        "safeToMoveAdded": [],
+        "safeToMoveRemoved": [
+          "Kenny Gainwell"
+        ]
+      },
+      "availability": {
+        "incoming": [
+          {
+            "playerId": "6770",
+            "playerName": "Joe Burrow",
+            "position": "QB",
+            "availability": "available",
+            "reason": "active"
+          }
+        ],
+        "outgoing": [
+          {
+            "playerId": "11564",
+            "playerName": "Drake Maye",
+            "position": "QB",
+            "availability": "available",
+            "reason": "active"
+          },
+          {
+            "playerId": "8151",
+            "playerName": "Kenneth Walker III",
+            "position": "RB",
+            "availability": "available",
+            "reason": "active"
+          }
+        ]
+      },
+      "potentialDrops": [],
+      "valuation": {
+        "basis": "structural_fallback",
+        "reason": "Complete projected lineups are unavailable for every week in the window.",
+        "meanDelta": null,
+        "comparableWeeks": 0,
+        "totalWeeks": 9
+      }
+    }
+  ],
+  "priorityGroups": [
+    {
+      "title": "Priority Need: WR for Week 10",
+      "slot": "WR",
+      "week": 10,
+      "candidates": [
+        {
+          "player_id": "11631",
+          "name": "Brian Thomas Jr.",
+          "position": "WR",
+          "team": "JAX",
+          "status": "Active",
+          "injury_status": null,
+          "search_rank": 75,
+          "team_need": "thin",
+          "league_scarcity": "low",
+          "waiver_value_score": 40,
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true,
+          "target_week_bye_status": "eligible"
+        },
+        {
+          "player_id": "9754",
+          "name": "Quentin Johnston",
+          "position": "WR",
+          "team": "LAC",
+          "status": "Active",
+          "injury_status": null,
+          "search_rank": 104,
+          "team_need": "thin",
+          "league_scarcity": "low",
+          "waiver_value_score": 30,
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true,
+          "target_week_bye_status": "eligible"
+        },
+        {
+          "player_id": "13293",
+          "name": "Ja'Kobi Lane",
+          "position": "WR",
+          "team": "BAL",
+          "status": "Active",
+          "injury_status": null,
+          "search_rank": 147,
+          "team_need": "thin",
+          "league_scarcity": "low",
+          "waiver_value_score": 30,
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true,
+          "target_week_bye_status": "eligible"
+        }
+      ]
+    },
+    {
+      "title": "Priority Need: DEF for Week 11",
+      "slot": "DEF",
+      "week": 11,
+      "candidates": [
+        {
+          "player_id": "BAL",
+          "name": "Baltimore Ravens",
+          "position": "DEF",
+          "team": "BAL",
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true
+        },
+        {
+          "player_id": "IND",
+          "name": "Indianapolis Colts",
+          "position": "DEF",
+          "team": "IND",
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true
+        },
+        {
+          "player_id": "ARI",
+          "name": "Arizona Cardinals",
+          "position": "DEF",
+          "team": "ARI",
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true
+        }
+      ]
+    },
+    {
+      "title": "Priority Need: FLEX for Week 11",
+      "slot": "FLEX",
+      "week": 11,
+      "candidates": [
+        {
+          "player_id": "12493",
+          "name": "Oronde Gadsden",
+          "position": "TE",
+          "team": "LAC",
+          "status": "Active",
+          "injury_status": null,
+          "search_rank": 83,
+          "team_need": "thin",
+          "league_scarcity": "high",
+          "waiver_value_score": 60,
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true,
+          "target_week_bye_status": "eligible"
+        },
+        {
+          "player_id": "5001",
+          "name": "Dalton Schultz",
+          "position": "TE",
+          "team": "HOU",
+          "status": "Active",
+          "injury_status": null,
+          "search_rank": 98,
+          "team_need": "thin",
+          "league_scarcity": "high",
+          "waiver_value_score": 60,
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true,
+          "target_week_bye_status": "eligible"
+        },
+        {
+          "player_id": "7002",
+          "name": "Juwan Johnson",
+          "position": "TE",
+          "team": "NO",
+          "status": "Active",
+          "injury_status": null,
+          "search_rank": 103,
+          "team_need": "thin",
+          "league_scarcity": "high",
+          "waiver_value_score": 50,
+          "availability": "available",
+          "reason": "active",
+          "currently_usable": true,
+          "target_week_bye_status": "eligible"
+        }
+      ]
+    }
+  ],
+  "baseline": {
+    "nextMoves": "- **ACT NOW — WR, Week 10:** Add a WR for Week 10. Jaylen Waddle is on bye and no usable replacement is rostered. Best available options: Brian Thomas Jr., Quentin Johnston, and Ja'Kobi Lane. No clearly safe drop identified.\n- **ACT NOW — DEF, Week 11:** Add a DEF for Week 11. New England Patriots is on bye and no usable replacement is rostered. No clearly safe drop identified.\n- **ACT NOW — FLEX, Week 11:** Add a FLEX for Week 11. Josh Jacobs is on bye and no usable replacement is rostered. Best available options: Oronde Gadsden, Dalton Schultz, and Juwan Johnson. No clearly safe drop identified.\n- **WATCH — QB, Week 10:** QB coverage is thin for Week 10. Joe Burrow is your only available QB for Week 10. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — TE, Week 10:** TE coverage is thin for Week 10. Sam LaPorta is your only available TE for Week 10. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — QB, Week 11:** QB coverage is thin for Week 11. Joe Burrow is your only available QB for Week 11. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — TE, Week 11:** TE coverage is thin for Week 11. Sam LaPorta is your only available TE for Week 11. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — QB, Week 12:** QB coverage is thin for Week 12. Joe Burrow is your only available QB for Week 12. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — TE, Week 12:** TE coverage is thin for Week 12. Sam LaPorta is your only available TE for Week 12. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — FLEX, Week 13:** Plan for a FLEX for Week 13. Braelon Allen is on bye and no usable replacement is rostered. Best available options: Oronde Gadsden, Dalton Schultz, and Juwan Johnson.\n- **WATCH — K, Week 13:** Add a K for Week 13. Spencer Shrader is on bye and no usable replacement is rostered.\n- **WATCH — QB, Week 13:** QB coverage is thin for Week 13. Joe Burrow is your only available QB for Week 13. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — RB, Week 13:** Plan for a RB for Week 13. Braelon Allen is on bye and no usable replacement is rostered. Best available options: Chris Rodriguez Jr., Kimani Vidal, and Keaton Mitchell.\n- **WATCH — TE, Week 13:** TE coverage is thin for Week 13. Sam LaPorta is your only available TE for Week 13. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — QB, Week 14:** QB coverage is thin for Week 14. Joe Burrow is your only available QB for Week 14. There is no legal replacement if Joe Burrow cannot play; a currently covered starting slot would be left unfilled.\n- **WATCH — TE, Week 14:** TE coverage is thin for Week 14. Sam LaPorta is your only available TE for Week 14. There is no legal replacement if Sam LaPorta cannot play; a currently covered starting slot would be left unfilled.",
+    "tradeReasons": [
+      [
+        "Structural fallback: Resolve follow-up drops before using projected valuation.",
+        "All-roster lineup: RB2 improves from Braelon Allen to Kenneth Walker III.",
+        "Available lineup: FLEX1 improves from Seth McGowan to Dylan Sampson.",
+        "RB depth or need improves.",
+        "Requires 1 follow-up drop to reach the active roster limit."
+      ],
+      [
+        "Structural fallback: Complete projected lineups are unavailable for every week in the window.",
+        "Both lineups: RB2 drops from Bucky Irving to Kenny Gainwell.",
+        "RB depth or need worsens."
+      ]
+    ],
+    "priorityWaivers": "### Priority Need: WR for Week 10\n\n1. Brian Thomas Jr.\n2. Quentin Johnston\n3. Ja'Kobi Lane\n\n_Options match the position and known availability. Check bye weeks and game status before adding._\n\n### Priority Need: DEF for Week 11\n\n1. Baltimore Ravens\n2. Indianapolis Colts\n3. Arizona Cardinals\n\n_Options match the position and known availability. Check bye weeks and game status before adding._\n\n### Priority Need: FLEX for Week 11\n\n1. Oronde Gadsden\n2. Dalton Schultz\n3. Juwan Johnson\n\n_Options match the position and known availability. Check bye weeks and game status before adding._"
+  }
+}

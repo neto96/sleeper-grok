@@ -1,3 +1,4 @@
+import { RecommendationList } from "@/components/recommendation-list";
 import type { WaiverExport } from "@/lib/sleeper/waiver-markdown";
 import { projectedWaivers } from "@/lib/sleeper/waiver-valuation";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "@/lib/sleeper/priority-waivers";
@@ -113,19 +114,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
 
         <div className="mt-4">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{snapshot.projections ? 'Structural lineup needs' : 'Recommended Next Moves'}</h3>
-          {recommendations.length === 0 ? (
-            <p className="mt-1 text-sm text-muted-foreground">No urgent lineup or bye-week moves identified.</p>
-          ) : (
-            <ul className="mt-1 space-y-1.5">
-              {recommendations.slice(0, 5).map((action, index) => (
-                <li key={`${action.position_or_slot}-${action.week}-${index}`} className="text-sm">
-                  <span className="mr-2 font-semibold">{String(action.urgency).replaceAll("_", " ").toUpperCase()}</span>
-                  <span className="font-medium">{String(action.title)}</span>
-                  <span className="ml-1 text-muted-foreground">{String(action.reason)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <RecommendationList actions={recommendations} currentWeek={snapshot.week} />
           {streamingRecommendations.length > 0 ? (
             <>
               <h4 className="mt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Weekly Streaming Options</h4>
@@ -157,7 +146,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
           <div className="mt-2 flex flex-wrap gap-1.5">
             {OFFENSE.map((pos) => (
               <Badge key={pos} variant={needVariant(usableNeed[pos]?.need)}>
-                {pos} · All roster: {needLabel(structuralNeed[pos]?.need)} · Available players: {needLabel(usableNeed[pos]?.need)}
+                {pos} · Full roster: {needLabel(structuralNeed[pos]?.need)} · Eligible now: {needLabel(usableNeed[pos]?.need)}
               </Badge>
             ))}
           </div>
@@ -165,15 +154,16 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
 
         {priorityGroups.map((group) => (
           <div key={`${group.slot}-${group.week}`} className="mt-4 rounded-lg border border-border p-3">
-            <h3 className="font-medium">{group.title}</h3>
+            <h3 className="font-medium">Need now: {group.slot}{group.week != null ? ` · Week ${group.week}` : ""}</h3>
             {group.candidates.length > 0 ? (
               <ol className="mt-2 list-inside list-decimal space-y-1 text-sm">
                 {group.candidates.map((player) => <li key={String(player.player_id)}>{String(player.name)}{player.target_week_bye_status === "unknown" ? " (target-week bye status unknown)" : ""}{player.availability === "uncertain" ? " (Questionable)" : ""}</li>)}
               </ol>
             ) : <p className="mt-2 text-sm text-muted-foreground">No available candidates found for this need.</p>}
-            <p className="mt-2 text-xs text-muted-foreground">{PRIORITY_WAIVER_NOTE}</p>
           </div>
         ))}
+
+        {priorityGroups.length > 0 ? <p className="text-xs text-muted-foreground">{PRIORITY_WAIVER_NOTE}</p> : null}
 
         <div className="mt-4">
           <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -229,10 +219,10 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
               <li key={pos} className="flex flex-wrap items-center gap-x-2 text-sm">
                 <span className="w-7 font-medium">{pos}</span>
                 <span className="text-muted-foreground">
-                  All roster: {scarcityLabel(structuralScarcity[pos]?.scarcity)}
+                  Full roster: {scarcityLabel(structuralScarcity[pos]?.scarcity)}
                 </span>
                 <span className="text-muted-foreground">
-                  · Available players: {scarcityLabel(usableScarcity[pos]?.scarcity)}
+                  · Eligible now: {scarcityLabel(usableScarcity[pos]?.scarcity)}
                 </span>
               </li>
             ))}

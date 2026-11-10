@@ -1,5 +1,5 @@
 // Display labels only: analysis values and scores retain their existing meaning.
-export const AVAILABILITY_LINEUP_NOTE = "Based on player status and roster eligibility; bye weeks are not excluded. Check Recommended Next Moves for week-specific gaps, including byes.";
+export const AVAILABILITY_LINEUP_NOTE = "Uses current status and roster eligibility, including Questionable players. Byes are not excluded; check Next Moves before setting starters.";
 function label(value: unknown, labels: Record<string, string>): string {
   if (value == null || value === "") return "Unknown";
   const key = String(value);
@@ -11,13 +11,13 @@ export function needLabel(value: unknown): string {
 }
 
 export function depthLabel(value: unknown): string {
-  return label(value, { short: "Short on starters", thin: "Limited backup depth", adequate: "Enough depth", deep: "Strong depth", covered_by_flex: "Covered through FLEX", unknown: "Unknown" });
+  return label(value, { short: "Short on starters", thin: "Thin depth", adequate: "Enough depth", deep: "Strong depth", covered_by_flex: "FLEX cover", unknown: "Unknown" });
 }
 
 export function scarcityLabel(value: unknown): string {
   return label(value, { high: "Scarce league depth", moderate: "Limited league depth", low: "Plentiful league depth", unknown: "Unknown" });
 }
 
-export const EXTRA_DEPTH_NOTE = "Players outside the best lineup when everyone on the roster is considered, including unavailable players.";
-export const SAFE_TO_MOVE_NOTE = "Available players outside the availability-based lineup. Check injuries, byes, and FLEX eligibility before a trade or drop; this is not a drop recommendation.";
-export const REPLACEMENT_NOTE = "Lineup-rating drop estimates how much the model's lineup score falls if a player is removed. These are rating units, not projected fantasy points. All roster includes unavailable players; available players uses current availability.";
+export const EXTRA_DEPTH_NOTE = "Outside the best full-roster lineup, including unavailable players.";
+export const SAFE_TO_MOVE_NOTE = "Eligible bench options, not drop recommendations. Check injuries, byes and FLEX needs before moving anyone.";
+export const REPLACEMENT_NOTE = "If removed: lineup rating points lost, not projected fantasy points. Full roster includes unavailable players; Eligible now uses current status and roster eligibility.";

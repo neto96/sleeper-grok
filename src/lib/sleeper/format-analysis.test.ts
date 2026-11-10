@@ -116,10 +116,10 @@ function markdown(): { text: string; snapshot: LeagueSnapshot } {
 describe("V3.4 Fantasy Analysis Markdown", () => {
   it("pairs structural and usable scarcity, need, and strength/depth", () => {
     const { text } = markdown();
-    assert.match(text, /### League Scarcity[\s\S]*QB: all roster: [^\n]+ · available players: [^\n]+/);
-    assert.match(text, /RB: all roster: Plentiful league depth · available players: Limited league depth/);
-    assert.match(text, /#### Position Need[\s\S]*RB: all roster: Some need · available players: Could use depth/);
-    assert.match(text, /#### Strength & Depth[\s\S]*RB: all roster: [^\n]+ · available players: [^\n]+/);
+    assert.match(text, /### League Scarcity[\s\S]*QB: full roster: [^\n]+ · eligible now: [^\n]+/);
+    assert.match(text, /RB: full roster: Plentiful league depth · eligible now: Limited league depth/);
+    assert.match(text, /#### Position Need[\s\S]*RB: full roster: Some need · eligible now: Could use depth/);
+    assert.match(text, /#### Strength & Depth[\s\S]*RB: full roster: [^\n]+ · eligible now: [^\n]+/);
   });
 
   it("lists unusable players but leaves Questionable players out of unavailable roster output", () => {
@@ -132,13 +132,13 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
 
   it("shows separate structural and usable lineups, preserving unavailable structural selections and empty slots", () => {
     const { text, snapshot: data } = markdown();
-    assert.match(text, /#### Best Lineup \(All Roster\)/);
-    assert.match(text, /#### Availability-Eligible Lineup/);
-    assert.match(text, /bye weeks are not excluded/);
-    assert.match(text, /week-specific gaps, including byes/);
+    assert.match(text, /#### Best Lineup \(Full Roster\)/);
+    assert.match(text, /#### Best Lineup Now/);
+    assert.match(text, /Byes are not excluded/);
+    assert.match(text, /check Next Moves before setting starters/);
     assert.doesNotMatch(text, /Currently Usable Lineup/);
-    const structural = text.split("#### Best Lineup (All Roster)")[1]?.split("#### Availability-Eligible Lineup")[0] ?? "";
-    const usable = text.split("#### Availability-Eligible Lineup")[1]?.split("\*\*Protect\*\*")[0] ?? "";
+    const structural = text.split("#### Best Lineup (Full Roster)")[1]?.split("#### Best Lineup Now")[0] ?? "";
+    const usable = text.split("#### Best Lineup Now")[1]?.split("\*\*Protect\*\*")[0] ?? "";
     assert.match(structural, /Josh Jacobs/);
     assert.doesNotMatch(usable, /Josh Jacobs|Jadarian Price|A\.J\. Brown/);
     assert.match(usable, /Empty/);
@@ -150,15 +150,15 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
   it("pairs replacement risk and protects unavailable players with availability context", () => {
     const { text } = markdown();
     assert.match(text, /#### Replacement Risk/);
-    assert.match(text, /\| Player \| Lineup-Rating Drop \(All Roster\) \| Replacement \(All Roster\) \| Lineup-Rating Drop \(Available Players\) \| Replacement \(Available Players\) \|/);
+    assert.match(text, /\| Player \| If Removed \(Full Roster\) \| Replacement \(Full Roster\) \| If Removed \(Eligible Now\) \| Replacement \(Eligible Now\) \|/);
     assert.match(text, /\| Josh Jacobs \| [^|]+ \| none \| — \| — \|/);
     assert.match(text, /\*\*Protect\*\*[\s\S]*A\.J\. Brown[^\n]*IR \/ unavailable/);
   });
 
   it("keeps structural and actionable surplus separate", () => {
     const { text } = markdown();
-    assert.match(text, /#### Extra Depth \(All Roster\)/);
-    assert.match(text, /#### Safe to Move \(Available Players\)/);
+    assert.match(text, /#### Bench Depth \(Full Roster\)/);
+    assert.match(text, /#### Tradeable Depth/);
     assert.match(text, /Josh Jacobs/);
   });
 
@@ -167,8 +167,8 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
     const before = structuredClone(data);
     const text = buildMarkdown(data);
     assert.doesNotMatch(text, /actionable surplus|structural surplus|usable loss|structural loss/i);
-    assert.match(text, /rating units, not projected fantasy points/);
-    assert.match(text, /this is not a drop recommendation/);
+    assert.match(text, /rating points lost, not projected fantasy points/);
+    assert.match(text, /not drop recommendations/);
     assert.deepEqual(data, before);
   });
 
@@ -188,7 +188,7 @@ describe("V3.4 Fantasy Analysis Markdown", () => {
     };
     const text = buildMarkdown(data);
     const nextMoves = text.split("#### Recommended Next Moves")[1]?.split("#### Roster Availability")[0] ?? "";
-    assert.match(nextMoves, /ACT NOW — TE, Week 6/);
+    assert.match(nextMoves, /ACT NOW — Add a TE for Week 6/);
     assert.match(nextMoves, /Sam LaPorta is unavailable/);
   });
 
@@ -335,7 +335,7 @@ describe("priority waiver presentation", () => {
     const before = structuredClone(data);
     const text = buildMarkdown(data);
     const section = text.slice(text.indexOf("## Waiver Analysis"));
-    assert.ok(section.indexOf("Priority Need: QB for Week 6") < section.indexOf("Other Waiver Opportunities"));
+    assert.ok(section.indexOf("Need now: QB · Week 6") < section.indexOf("Other Waiver Opportunities"));
     assert.ok(section.indexOf("1. Kyler Murray") < section.indexOf("Strong TE"));
     assert.ok(section.indexOf("Strong TE") < section.indexOf("Strong RB"));
     assert.deepEqual(data, before);
@@ -369,7 +369,7 @@ it("retains Week 7 RB need options beyond the global top 40 without future-week 
   assert.match(String(action.reason), /is on bye/);
   assert.doesNotMatch(String(action.reason), /unavailable that week|No available waiver options/);
   assert.match(String(action.reason), /Available RB 0, Available RB 1, and Available RB 2/);
-  assert.match(buildMarkdown(updated), /Priority Need: RB for Week 7\n\n1\. Available RB 0 \(target-week bye status unknown\)/);
+  assert.match(buildMarkdown(updated), /Need now: RB · Week 7\n\n1\. Available RB 0 \(target-week bye status unknown\)/);
   assert.match(String(action.reason), /Target-week bye status is unknown/);
   const switched = applyMyRoster(updated, 1);
   assert.deepEqual(priorityWaiverGroups(switched), priorityWaiverGroups(updated));
@@ -394,7 +394,7 @@ it("carries reliable target-week byes from snapshot construction into priority p
     assert.match(String(action.reason), /is on bye/);
     assert.match(String(action.reason), /Best available options: Ready RB/);
     assert.doesNotMatch(String(action.reason), /Bye RB|bye status is unknown/);
-    const section = buildMarkdown(view).split("### Priority Need: RB for Week 7")[1]!.split("###")[0]!;
+    const section = buildMarkdown(view).split("### Need now: RB · Week 7")[1]!.split("###")[0]!;
     assert.match(section, /1\. Ready RB/);
     assert.doesNotMatch(section, /Bye RB|bye status unknown/);
     assert.deepEqual((view.actionableWaiverAnalysis!.candidates as AnalysisRecord[]).map(p => p.player_id), ["bye-rb", "ready-rb"]);
@@ -405,11 +405,12 @@ it("carries reliable target-week byes from snapshot construction into priority p
 it("exports the app release separately from snapshot version without the full changelog", () => {
   const data = snapshot();
   const text = buildMarkdown(data);
-  assert.equal(APP_VERSION, "3.5.1");
-  assert.ok(text.split("## My Team")[0]!.includes(`- Analysis version: V${APP_VERSION}`));
+  assert.equal(APP_VERSION, "3.6.1");
+  assert.ok(text.split("## My Team")[0]!.includes(`- App version: V${APP_VERSION}`));
+  assert.match(text, /Analysis engine: V3\.5\.1/);
   assert.equal(data.snapshotVersion, "3.2");
   assert.equal(snapshotJson(data).snapshot_version, "3.2");
   assert.equal(CHANGELOG[0].version, APP_VERSION);
-  assert.deepEqual(CHANGELOG.map(release => release.version), ["3.5.1", "3.5", "3.4", "3.3"]);
+  assert.deepEqual(CHANGELOG.map(release => release.version), ["3.6.1", "3.6", "3.5.1", "3.5", "3.4", "3.3"]);
   assert.ok(!text.includes(CHANGELOG[0].changes[0]));
 });
