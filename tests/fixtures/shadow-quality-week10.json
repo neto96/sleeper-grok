@@ -1,0 +1,931 @@
+{
+  "schema": "shadow-quality-fixture-v1",
+  "attribution": "Based on data obtained from FantasyPros. Research/test fixture only, not licensed production integration.",
+  "policy": {
+    "season": 2026,
+    "now": "2026-11-10T14:00:00.000Z",
+    "maxAgeHours": 72
+  },
+  "legacySource": {
+    "capturedAt": "2026-11-10T06:31:13.680Z",
+    "description": "Minimal fields from the Week 10 Sleeper characterization; not a simultaneous live roster. Legacy ranks/status are frozen."
+  },
+  "poolCaptures": [
+    {
+      "pool": "ALL",
+      "retrievedAt": "2026-11-10T13:54:23.524Z",
+      "dataAsOf": {
+        "date": "2026-11-10",
+        "nfl_season": 2026,
+        "nfl_week": 10,
+        "source": "FantasyPros, current as of this date"
+      },
+      "queriedLimit": 300,
+      "returnedCount": 300
+    },
+    {
+      "pool": "QB",
+      "retrievedAt": "2026-11-10T13:54:23.524Z",
+      "dataAsOf": {
+        "date": "2026-11-10",
+        "nfl_season": 2026,
+        "nfl_week": 10,
+        "source": "FantasyPros, current as of this date"
+      },
+      "queriedLimit": 100,
+      "returnedCount": 64
+    },
+    {
+      "pool": "RB",
+      "retrievedAt": "2026-11-10T13:54:23.524Z",
+      "dataAsOf": {
+        "date": "2026-11-10",
+        "nfl_season": 2026,
+        "nfl_week": 10,
+        "source": "FantasyPros, current as of this date"
+      },
+      "queriedLimit": 100,
+      "returnedCount": 100
+    },
+    {
+      "pool": "WR",
+      "retrievedAt": "2026-11-10T13:54:23.524Z",
+      "dataAsOf": {
+        "date": "2026-11-10",
+        "nfl_season": 2026,
+        "nfl_week": 10,
+        "source": "FantasyPros, current as of this date"
+      },
+      "queriedLimit": 100,
+      "returnedCount": 100
+    },
+    {
+      "pool": "TE",
+      "retrievedAt": "2026-11-10T13:54:23.524Z",
+      "dataAsOf": {
+        "date": "2026-11-10",
+        "nfl_season": 2026,
+        "nfl_week": 10,
+        "source": "FantasyPros, current as of this date"
+      },
+      "queriedLimit": 100,
+      "returnedCount": 67
+    }
+  ],
+  "players": [
+    {
+      "name": "Joe Burrow",
+      "legacy": {
+        "searchRank": 16,
+        "rosterStatus": "starter",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "6770",
+            "providerId": "19196",
+            "name": "Joe Burrow",
+            "position": "QB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 25,
+          "positionalEcr": 2,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "6770",
+            "providerId": "19196",
+            "name": "Joe Burrow",
+            "position": "QB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:QB",
+            "kind": "position",
+            "position": "QB"
+          },
+          "overallEcr": null,
+          "positionalEcr": 2,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Tetairoa McMillan",
+      "legacy": {
+        "searchRank": 38,
+        "rosterStatus": "starter",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "12526",
+            "providerId": "25417",
+            "name": "Tetairoa McMillan",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 35,
+          "positionalEcr": 18,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "12526",
+            "providerId": "25417",
+            "name": "Tetairoa McMillan",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 18,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "A.J. Brown",
+      "legacy": {
+        "searchRank": 17,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": "Out"
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "5859",
+            "providerId": "18218",
+            "name": "A.J. Brown",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 55,
+          "positionalEcr": 29,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "5859",
+            "providerId": "18218",
+            "name": "A.J. Brown",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 30,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Jaylen Waddle",
+      "legacy": {
+        "searchRank": 42,
+        "rosterStatus": "starter",
+        "status": "Active",
+        "injuryStatus": "Out"
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "7526",
+            "providerId": "19790",
+            "name": "Jaylen Waddle",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 54,
+          "positionalEcr": 28,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "7526",
+            "providerId": "19790",
+            "name": "Jaylen Waddle",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 31,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Josh Jacobs",
+      "legacy": {
+        "searchRank": 20,
+        "rosterStatus": "starter",
+        "status": "Active",
+        "injuryStatus": "Out"
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "5850",
+            "providerId": "18269",
+            "name": "Josh Jacobs",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 71,
+          "positionalEcr": 24,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "5850",
+            "providerId": "18269",
+            "name": "Josh Jacobs",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:RB",
+            "kind": "position",
+            "position": "RB"
+          },
+          "overallEcr": null,
+          "positionalEcr": 21,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Sam LaPorta",
+      "legacy": {
+        "searchRank": 58,
+        "rosterStatus": "starter",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "10859",
+            "providerId": "22978",
+            "name": "Sam LaPorta",
+            "position": "TE",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 79,
+          "positionalEcr": 5,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "10859",
+            "providerId": "22978",
+            "name": "Sam LaPorta",
+            "position": "TE",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:TE",
+            "kind": "position",
+            "position": "TE"
+          },
+          "overallEcr": null,
+          "positionalEcr": 6,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Travis Etienne Jr.",
+      "legacy": {
+        "searchRank": 34,
+        "rosterStatus": "bench",
+        "status": "Inactive",
+        "injuryStatus": "IR"
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "7543",
+            "providerId": "19231",
+            "name": "Travis Etienne Jr.",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 88,
+          "positionalEcr": 26,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "7543",
+            "providerId": "19231",
+            "name": "Travis Etienne Jr.",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:RB",
+            "kind": "position",
+            "position": "RB"
+          },
+          "overallEcr": null,
+          "positionalEcr": 27,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Rome Odunze",
+      "legacy": {
+        "searchRank": 65,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "11620",
+            "providerId": "25411",
+            "name": "Rome Odunze",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 65,
+          "positionalEcr": 33,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "11620",
+            "providerId": "25411",
+            "name": "Rome Odunze",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 32,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Jeremiyah Love",
+      "legacy": {
+        "searchRank": 15,
+        "rosterStatus": "bench",
+        "status": "Inactive",
+        "injuryStatus": "IR"
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "13287",
+            "providerId": "25403",
+            "name": "Jeremiyah Love",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 116,
+          "positionalEcr": 30,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "13287",
+            "providerId": "25403",
+            "name": "Jeremiyah Love",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:RB",
+            "kind": "position",
+            "position": "RB"
+          },
+          "overallEcr": null,
+          "positionalEcr": 38,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Michael Wilson",
+      "legacy": {
+        "searchRank": 75,
+        "rosterStatus": "starter",
+        "status": "Active",
+        "injuryStatus": "Out"
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "10232",
+            "providerId": null,
+            "name": "Michael Wilson",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": null,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Absent in retrieved ALL (limit 300) and WR (limit 100) pools; global unranked status not asserted; known Sleeper identity retained."
+        },
+        {
+          "player": {
+            "sleeperId": "10232",
+            "providerId": null,
+            "name": "Michael Wilson",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Absent in retrieved ALL (limit 300) and WR (limit 100) pools; global unranked status not asserted; known Sleeper identity retained."
+        }
+      ]
+    },
+    {
+      "name": "Courtland Sutton",
+      "legacy": {
+        "searchRank": 72,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "5045",
+            "providerId": "17253",
+            "name": "Courtland Sutton",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 97,
+          "positionalEcr": 47,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "5045",
+            "providerId": "17253",
+            "name": "Courtland Sutton",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 56,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Brian Thomas Jr.",
+      "legacy": {
+        "searchRank": 75,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "11631",
+            "providerId": "23000",
+            "name": "Brian Thomas Jr.",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 128,
+          "positionalEcr": 58,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "11631",
+            "providerId": "23000",
+            "name": "Brian Thomas Jr.",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 63,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Ja'Kobi Lane",
+      "legacy": {
+        "searchRank": 147,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "13293",
+            "providerId": "27337",
+            "name": "Ja'Kobi Lane",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 162,
+          "positionalEcr": 69,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "13293",
+            "providerId": "27337",
+            "name": "Ja'Kobi Lane",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 65,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    },
+    {
+      "name": "Quentin Johnston",
+      "legacy": {
+        "searchRank": 104,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "9754",
+            "providerId": "23123",
+            "name": "Quentin Johnston",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 141,
+          "positionalEcr": 62,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        },
+        {
+          "player": {
+            "sleeperId": "9754",
+            "providerId": "23123",
+            "name": "Quentin Johnston",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:WR",
+            "kind": "position",
+            "position": "WR"
+          },
+          "overallEcr": null,
+          "positionalEcr": 68,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T13:54:23.524Z",
+          "sourceNote": "Observed via connected FantasyPros MCP get_ecr; minimal research fixture; identity crosswalk manually matched by name and position."
+        }
+      ]
+    }
+  ]
+}
