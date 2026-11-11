@@ -1,0 +1,282 @@
+{
+  "provenance": "Aggregate findings from excluded local full-dataset study; public synthetic controls cannot independently reconstruct this census.",
+  "capture": "2026-11-10T06:31:13.680Z",
+  "coverage": {
+    "total": 150,
+    "counts": {
+      "current": 9,
+      "missing": 141,
+      "stale": 0,
+      "unsupported": 0,
+      "identity_unresolved": 0
+    },
+    "percent": {
+      "current": 6,
+      "missing": 94,
+      "stale": 0,
+      "unsupported": 0,
+      "identity_unresolved": 0
+    }
+  },
+  "positions": {
+    "QB": {
+      "total": 19,
+      "counts": {
+        "current": 1,
+        "missing": 18,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 5.2631578947368425,
+        "missing": 94.73684210526316,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    },
+    "RB": {
+      "total": 53,
+      "counts": {
+        "current": 3,
+        "missing": 50,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 5.660377358490566,
+        "missing": 94.33962264150944,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    },
+    "WR": {
+      "total": 58,
+      "counts": {
+        "current": 4,
+        "missing": 54,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 6.896551724137931,
+        "missing": 93.10344827586206,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    },
+    "TE": {
+      "total": 20,
+      "counts": {
+        "current": 1,
+        "missing": 19,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 5,
+        "missing": 95,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    }
+  },
+  "waiverCoverage": {
+    "total": 580,
+    "counts": {
+      "current": 4,
+      "missing": 576,
+      "stale": 0,
+      "unsupported": 0,
+      "identity_unresolved": 0
+    },
+    "percent": {
+      "current": 0.6896551724137931,
+      "missing": 99.3103448275862,
+      "stale": 0,
+      "unsupported": 0,
+      "identity_unresolved": 0
+    }
+  },
+  "waiverPositions": {
+    "QB": {
+      "total": 93,
+      "counts": {
+        "current": 0,
+        "missing": 93,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 0,
+        "missing": 100,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    },
+    "RB": {
+      "total": 109,
+      "counts": {
+        "current": 0,
+        "missing": 109,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 0,
+        "missing": 100,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    },
+    "WR": {
+      "total": 226,
+      "counts": {
+        "current": 4,
+        "missing": 222,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 1.7699115044247788,
+        "missing": 98.23008849557522,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    },
+    "TE": {
+      "total": 152,
+      "counts": {
+        "current": 0,
+        "missing": 152,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      },
+      "percent": {
+        "current": 0,
+        "missing": 100,
+        "stale": 0,
+        "unsupported": 0,
+        "identity_unresolved": 0
+      }
+    }
+  },
+  "counts": {
+    "rosters": 12,
+    "fullyCovered": 0,
+    "startingLineupsCovered": 0,
+    "curveSensitive": 0,
+    "curveBlocked": 12,
+    "legacyAvailabilitySensitive": 5
+  },
+  "curveMetrics": [
+    {
+      "curve": "shiftedPower",
+      "evaluable": 0,
+      "blocked": 12,
+      "starterChanges": null,
+      "slotChanges": null,
+      "replacementChanges": null,
+      "tiesOnly": null,
+      "crossTierChanges": null,
+      "causalCliffs": null,
+      "availabilitySensitive": null
+    },
+    {
+      "curve": "logarithmic",
+      "evaluable": 0,
+      "blocked": 12,
+      "starterChanges": null,
+      "slotChanges": null,
+      "replacementChanges": null,
+      "tiesOnly": null,
+      "crossTierChanges": null,
+      "causalCliffs": null,
+      "availabilitySensitive": null
+    },
+    {
+      "curve": "percentile",
+      "evaluable": 0,
+      "blocked": 12,
+      "starterChanges": null,
+      "slotChanges": null,
+      "replacementChanges": null,
+      "tiesOnly": null,
+      "crossTierChanges": null,
+      "causalCliffs": null,
+      "availabilitySensitive": null
+    }
+  ],
+  "history": [
+    {
+      "capture": "2026-10-29T19:26:17.806Z",
+      "coverage": {
+        "total": 153,
+        "counts": {
+          "current": 0,
+          "missing": 141,
+          "stale": 0,
+          "unsupported": 12,
+          "identity_unresolved": 0
+        },
+        "percent": {
+          "current": 0,
+          "missing": 92.15686274509804,
+          "stale": 0,
+          "unsupported": 7.8431372549019605,
+          "identity_unresolved": 0
+        }
+      },
+      "counts": {
+        "rosters": 12,
+        "fullyCovered": 0,
+        "startingLineupsCovered": 0,
+        "curveSensitive": 0,
+        "curveBlocked": 12,
+        "legacyAvailabilitySensitive": 1
+      }
+    },
+    {
+      "capture": "2026-10-30T18:59:52.294Z",
+      "coverage": {
+        "total": 153,
+        "counts": {
+          "current": 0,
+          "missing": 141,
+          "stale": 0,
+          "unsupported": 12,
+          "identity_unresolved": 0
+        },
+        "percent": {
+          "current": 0,
+          "missing": 92.15686274509804,
+          "stale": 0,
+          "unsupported": 7.8431372549019605,
+          "identity_unresolved": 0
+        }
+      },
+      "counts": {
+        "rosters": 12,
+        "fullyCovered": 0,
+        "startingLineupsCovered": 0,
+        "curveSensitive": 0,
+        "curveBlocked": 12,
+        "legacyAvailabilitySensitive": 3
+      }
+    }
+  ]
+}

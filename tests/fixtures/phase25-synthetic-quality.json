@@ -1,0 +1,483 @@
+{
+  "attribution": "Synthetic controls, not FantasyPros observations. Provider name identifies the adapter contract only.",
+  "policy": {
+    "season": 2026,
+    "now": "2026-11-10T14:00:00.000Z",
+    "maxAgeHours": 72
+  },
+  "legacySource": {
+    "capturedAt": "2026-11-10T14:00:00.000Z",
+    "description": "Invented deterministic controls"
+  },
+  "poolCaptures": [],
+  "players": [
+    {
+      "name": "Synthetic QB 1",
+      "legacy": {
+        "searchRank": 20,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-1",
+            "providerId": "synthetic-provider-1",
+            "name": "Synthetic QB 1",
+            "position": "QB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 10,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic RB 2",
+      "legacy": {
+        "searchRank": 30,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-2",
+            "providerId": "synthetic-provider-2",
+            "name": "Synthetic RB 2",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 22,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic RB 3",
+      "legacy": {
+        "searchRank": 40,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-3",
+            "providerId": "synthetic-provider-3",
+            "name": "Synthetic RB 3",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 34,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic RB 4",
+      "legacy": {
+        "searchRank": 50,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-4",
+            "providerId": "synthetic-provider-4",
+            "name": "Synthetic RB 4",
+            "position": "RB",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 46,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 5",
+      "legacy": {
+        "searchRank": 60,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-5",
+            "providerId": "synthetic-provider-5",
+            "name": "Synthetic WR 5",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 58,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 6",
+      "legacy": {
+        "searchRank": 70,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-6",
+            "providerId": "synthetic-provider-6",
+            "name": "Synthetic WR 6",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 70,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 7",
+      "legacy": {
+        "searchRank": 80,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-7",
+            "providerId": "synthetic-provider-7",
+            "name": "Synthetic WR 7",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 82,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic TE 8",
+      "legacy": {
+        "searchRank": 90,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-8",
+            "providerId": "synthetic-provider-8",
+            "name": "Synthetic TE 8",
+            "position": "TE",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 94,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic TE 9",
+      "legacy": {
+        "searchRank": 100,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-9",
+            "providerId": "synthetic-provider-9",
+            "name": "Synthetic TE 9",
+            "position": "TE",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 106,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 10",
+      "legacy": {
+        "searchRank": 110,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-10",
+            "providerId": "synthetic-provider-10",
+            "name": "Synthetic WR 10",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 118,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 11",
+      "legacy": {
+        "searchRank": 120,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-11",
+            "providerId": "synthetic-provider-11",
+            "name": "Synthetic WR 11",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 130,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 12",
+      "legacy": {
+        "searchRank": 130,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-12",
+            "providerId": "synthetic-provider-12",
+            "name": "Synthetic WR 12",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 142,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    },
+    {
+      "name": "Synthetic WR 13",
+      "legacy": {
+        "searchRank": 140,
+        "rosterStatus": "bench",
+        "status": "Active",
+        "injuryStatus": null
+      },
+      "evidence": [
+        {
+          "player": {
+            "sleeperId": "synthetic-13",
+            "providerId": "synthetic-provider-13",
+            "name": "Synthetic WR 13",
+            "position": "WR",
+            "identityResolved": true
+          },
+          "provider": "FantasyPros",
+          "season": 2026,
+          "rankingType": "ROS",
+          "scoring": "PPR",
+          "format": "redraft-1qb",
+          "pool": {
+            "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+            "kind": "overall",
+            "position": null
+          },
+          "overallEcr": 154,
+          "positionalEcr": null,
+          "sourceUpdatedAt": null,
+          "sourceAsOfDate": "2026-11-10",
+          "retrievedAt": "2026-11-10T14:00:00.000Z",
+          "sourceNote": "Synthetic rank; not observed provider data."
+        }
+      ]
+    }
+  ]
+}
