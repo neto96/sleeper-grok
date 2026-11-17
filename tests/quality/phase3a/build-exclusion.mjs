@@ -1,11 +1,12 @@
 /** Integration check: builds with a synthetic private cache, restoring it afterward. */
 import assert from "node:assert/strict";
-import { readFile, writeFile, mkdir, rm, readdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm, readdir, mkdtemp } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { resolve, join } from "node:path";
 const path = resolve("local-data/fantasypros-quality.json"),
   sentinel = "PHASE3A_PRIVATE_BUILD_CANARY_82943";
 let original = null;
+let rawDir = null;
 try {
   original = await readFile(path);
 } catch (e) {
@@ -21,6 +22,12 @@ const walk = async (dir) =>
   ).flat();
 try {
   await mkdir(resolve("local-data"), { recursive: true });
+  rawDir = await mkdtemp(resolve("local-data/raw-build-check-"));
+  await writeFile(
+    join(rawDir, "all.json"),
+    JSON.stringify({ rankings: [{ player_name: "PHASE3B_RAW_PRIVATE_CANARY_63819" }] }),
+    { mode: 0o600 },
+  );
   const c = JSON.parse(await readFile("docs/local-quality.example.json", "utf8"));
   c.records[0].evidence.player.name = sentinel;
   await writeFile(path, JSON.stringify(c), { mode: 0o600 });
@@ -42,6 +49,9 @@ try {
       const data = await readFile(f);
       for (const marker of [
         sentinel,
+        "PHASE3B_RAW_PRIVATE_CANARY_63819",
+        "quality-import-ecr",
+        "Expected current calendar season",
         "/__local-quality",
         "Best ROS Assets",
         "Manually supplied local research capture.",
@@ -57,6 +67,7 @@ try {
     );
   }
 } finally {
+  if (rawDir) await rm(rawDir, { recursive: true, force: true });
   if (original !== null) await writeFile(path, original);
   else await rm(path, { force: true });
 }
