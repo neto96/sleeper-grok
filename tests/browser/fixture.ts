@@ -52,3 +52,11 @@ export function makeProjectionSnapshot(): LeagueSnapshot {
   for(const player of snapshot.projections.players) player.weeks.push({...player.weeks[0],week:snapshot.week+1});
   return snapshot;
 }
+
+/** Invented free agents for local-only list interaction checks. */
+export function makeLocalQualitySnapshot() {
+  const s = makeProjectionSnapshot();
+  s.analysisWaiverPool = Array.from({length:30},(_,i)=>({player_id:`local-${i}`,name:`Research Option ${i}`,position:i%2?'RB':'WR',team:'TST',status:'Active',injury_status:null}));
+  s.actionableWaiverAnalysis = {available:true,candidates:s.analysisWaiverPool.slice(0,3)};
+  return s;
+}

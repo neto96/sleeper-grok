@@ -54,6 +54,9 @@ try {
         "Expected current calendar season",
         "/__local-quality",
         "Best ROS Assets",
+        "Best measured lineup change",
+        "ROS: no current matched rank",
+        "ROS position filter",
         "Manually supplied local research capture.",
         "shadow-quality-v1",
       ])

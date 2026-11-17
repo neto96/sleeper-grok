@@ -2,7 +2,7 @@ import { RecommendationList } from "@/components/recommendation-list";
 import type { WaiverExport } from "@/lib/sleeper/waiver-markdown";
 import { projectedWaivers } from "@/lib/sleeper/waiver-valuation";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "@/lib/sleeper/priority-waivers";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, type ReactNode, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { FANTASY_POSITIONS, type FantasyPosition } from "@/lib/sleeper/constants";
 import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
@@ -83,9 +83,9 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
     ? (snapshot.waiverAnalysis.candidates as AnalysisRecord[])
     : [];
 
-  return (
+  const render = (annotation?: (id:string)=>ReactNode, panel?:ReactNode) => (
     <div className="mt-6 grid gap-4">
-      {!disabled && LocalRosAssets ? <Suspense fallback={null}><LocalRosAssets snapshot={snapshot} /></Suspense> : null}
+      {panel}
       <section className="rounded-xl bg-card p-4 shadow-border">
         <h2 className="font-display text-xl font-semibold tracking-tight">Waiver analysis</h2>
         <p className="mt-1 text-sm text-pretty text-muted-foreground">
@@ -109,7 +109,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
             <p className="mt-3 text-sm">{projected.dropName ? `After dropping ${projected.dropName}` : 'Using your open roster spot'}. Ranked by points gained per week; negative values indicate a projected loss.</p>
             <ol className="mt-2 divide-y divide-border">
               {projected.rows.slice(0,12).map(row=><li key={row.playerId} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
-                <span>{row.name} · {row.position}{row.uncertain?' · Questionable':''}</span>
+                <span>{row.name} · {row.position}{row.uncertain?' · Questionable':''}{annotation?.(row.playerId)}</span>
                 <span className="tabular-nums">{row.delta===null ? 'Unknown — incomplete forecast or lineup' : `${row.delta>=0?'+':''}${row.delta.toFixed(2)} points/week`}</span>
               </li>)}
             </ol>
@@ -162,7 +162,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
             <h3 className="font-medium">Need now: {group.slot}{group.week != null ? ` · Week ${group.week}` : ""}</h3>
             {group.candidates.length > 0 ? (
               <ol className="mt-2 list-inside list-decimal space-y-1 text-sm">
-                {group.candidates.map((player) => <li key={String(player.player_id)}>{String(player.name)}{player.target_week_bye_status === "unknown" ? " (target-week bye status unknown)" : ""}{player.availability === "uncertain" ? " (Questionable)" : ""}</li>)}
+                {group.candidates.map((player) => <li key={String(player.player_id)}>{String(player.name)}{annotation?.(String(player.player_id))}{player.target_week_bye_status === "unknown" ? " (target-week bye status unknown)" : ""}{player.availability === "uncertain" ? " (Questionable)" : ""}</li>)}
               </ol>
             ) : <p className="mt-2 text-sm text-muted-foreground">No available candidates found for this need.</p>}
           </div>
@@ -185,6 +185,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
                   <span className="min-w-0 truncate">
                     <span className="mr-2 text-muted-foreground">{String(player.position)}</span>
                     {String(player.name)}
+                    {annotation?.(String(player.player_id))}
                     {weeklyContextLabel(weeklyContextByPlayer[String(player.player_id)], String(player.position)) ? (
                       <span className="ml-2 text-xs text-muted-foreground">
                         {weeklyContextLabel(weeklyContextByPlayer[String(player.player_id)], String(player.position))}
@@ -284,6 +285,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
                 <li key={player.playerId} className="flex items-baseline justify-between gap-3 py-2 text-sm">
                   <span className="min-w-0 truncate">
                     {player.name}
+                    {annotation?.(player.playerId)}
                     {player.injuryStatus ? (
                       <Badge variant="injury" className="ml-2 align-middle">
                         {player.injuryStatus}
@@ -301,4 +303,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
       </div>
     </div>
   );
+  return !disabled && LocalRosAssets
+    ? <Suspense fallback={render()}><LocalRosAssets snapshot={snapshot} projected={projected}>{render}</LocalRosAssets></Suspense>
+    : render();
 }
