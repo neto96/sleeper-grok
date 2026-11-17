@@ -124,12 +124,17 @@ for(const [i,make] of [makeSnapshot,makeProjectionSnapshot].entries())test(`base
  assert.deepEqual(observed,goldens[i]);assert.deepEqual(snapshot,before);assert.equal(snapshotJson(snapshot).snapshot_version,"3.2");
  assert.deepEqual(make(),before);
 });
-test("no production module imports the shadow module, fixture or report",()=>{
+test("only guarded local development adapter may import quality validation",()=>{
  const root=resolve(import.meta.dirname,"../..");
  const walk=(dir:string):string[]=>readdirSync(dir,{withFileTypes:true}).flatMap(d=>d.isDirectory()?walk(resolve(dir,d.name)):[resolve(dir,d.name)]);
  for(const file of [...walk(root),...walk(resolve(root,"../server"))]){
   if(!/\.(?:ts|tsx|js|mjs)$/.test(file)||file.endsWith(".test.ts")||file.endsWith("/player-quality.ts"))continue;
-  assert.doesNotMatch(readFileSync(file,"utf8"),/player-quality|shadow-quality-week10|tests\/quality/,relative(root,file));
+  const content=readFileSync(file,"utf8");
+  if(file.endsWith("/lib/local-quality/model.ts")) {
+   assert.doesNotMatch(content,/shadow-quality-week10|tests\/quality/);
+   continue; // Phase 3A dev-only adapter; build-exclusion tests prove it cannot ship.
+  }
+  assert.doesNotMatch(content,/player-quality|shadow-quality-week10|tests\/quality/,relative(root,file));
  }
  const module=readFileSync(new URL("./player-quality.ts",import.meta.url),"utf8");
  assert.doesNotMatch(module,/\bfetch\s*\(|\bimport\s*\(|\bDate\.now\s*\(/);

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "evidence": {
+        "player": {
+          "sleeperId": "free-1",
+          "providerId": "fp-free-1",
+          "name": "Synthetic Receiver",
+          "position": "WR",
+          "identityResolved": true
+        },
+        "provider": "FantasyPros",
+        "season": 2026,
+        "rankingType": "ROS",
+        "scoring": "PPR",
+        "format": "redraft-1qb",
+        "pool": {
+          "id": "fantasypros:NFL:2026:ROS:PPR:redraft-1qb:ALL",
+          "kind": "overall",
+          "position": null
+        },
+        "overallEcr": 20,
+        "positionalEcr": 10,
+        "sourceUpdatedAt": "2026-11-16T12:00:00.000Z",
+        "sourceAsOfDate": null,
+        "retrievedAt": "2026-11-16T12:00:00.000Z",
+        "sourceNote": "Synthetic test only"
+      },
+      "team": "TST"
+    }
+  ],
+  "mappings": {},
+  "players": []
+}

@@ -2,7 +2,7 @@ import { RecommendationList } from "@/components/recommendation-list";
 import type { WaiverExport } from "@/lib/sleeper/waiver-markdown";
 import { projectedWaivers } from "@/lib/sleeper/waiver-valuation";
 import { priorityWaiverGroups, PRIORITY_WAIVER_NOTE } from "@/lib/sleeper/priority-waivers";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { FANTASY_POSITIONS, type FantasyPosition } from "@/lib/sleeper/constants";
 import type { AnalysisRecord } from "@/lib/sleeper/analysis/engine";
@@ -10,6 +10,10 @@ import type { LeagueSnapshot } from "@/lib/sleeper/types";
 import { cn } from "@/lib/utils";
 
 import { needLabel, scarcityLabel } from "@/lib/sleeper/presentation";
+
+const LocalRosAssets = import.meta.env.LOCAL_QUALITY_ENABLED
+  ? lazy(() => import("./local-ros-assets"))
+  : null;
 
 const OFFENSE = ["QB", "RB", "WR", "TE"] as const;
 
@@ -81,6 +85,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
 
   return (
     <div className="mt-6 grid gap-4">
+      {!disabled && LocalRosAssets ? <Suspense fallback={null}><LocalRosAssets snapshot={snapshot} /></Suspense> : null}
       <section className="rounded-xl bg-card p-4 shadow-border">
         <h2 className="font-display text-xl font-semibold tracking-tight">Waiver analysis</h2>
         <p className="mt-1 text-sm text-pretty text-muted-foreground">

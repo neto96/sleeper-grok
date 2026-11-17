@@ -6,9 +6,10 @@ import { resolve } from "node:path";
 import { readFile } from 'node:fs/promises';
 
 const root = fileURLToPath(new URL(".", import.meta.url));
-export async function startPreview(port = 0) {
+export async function startPreview(port = 0, localQuality = false) {
   const server = await createServer({
     configFile: false, envDir: false, root, publicDir: false,
+    define: { "import.meta.env.LOCAL_QUALITY_ENABLED": JSON.stringify(localQuality) },
     plugins: [react(), tailwind(), {
       name: 'private-projection-study',
       configureServer(server) {

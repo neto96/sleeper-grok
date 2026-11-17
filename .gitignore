@@ -10,3 +10,6 @@ __pycache__/
 .grok/preview.pid
 .grok/preview.log
 release-artifacts/
+
+# Private local research captures; never deploy or commit.
+local-data/
