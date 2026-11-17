@@ -22,7 +22,7 @@
 import { spawn } from "node:child_process";
 import { readFileSync, realpathSync } from "node:fs";
 import { constants as osConstants } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const APP_ENV_REL_PATH = ".grok/app-env.json";
@@ -104,6 +104,60 @@ export function isMainModule(moduleUrl) {
   }
 }
 
+/**
+ * Windows cannot spawn npm's .cmd shims without a shell. For local Node CLIs,
+ * use the installed package's bin entry directly with this Node executable.
+ * No shell/quoting layer: spaces and metacharacters remain literal arguments.
+ * POSIX and explicit executable paths retain their existing spawn behavior.
+ */
+export function resolveCommand(
+  command,
+  args,
+  { platform = process.platform, root = projectRoot(), node = process.execPath } = {},
+) {
+  if (platform !== "win32" || !/^[a-zA-Z0-9_-]+$/.test(command)) {
+    return { command, args };
+  }
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
+  } catch {
+    return { command, args };
+  }
+  const names = new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.devDependencies ?? {}),
+    ...Object.keys(manifest.optionalDependencies ?? {}),
+  ]);
+  const candidates = [];
+  for (const name of [...names].sort()) {
+    if (!/^(?:@[a-zA-Z0-9_.-]+\/)?[a-zA-Z0-9_.-]+$/.test(name)) continue;
+    try {
+      const packageDir = join(root, "node_modules", name);
+      const pkg = JSON.parse(readFileSync(join(packageDir, "package.json"), "utf8"));
+      const bin =
+        typeof pkg.bin === "string"
+          ? name.split("/").at(-1) === command
+            ? pkg.bin
+            : undefined
+          : Object.hasOwn(pkg.bin ?? {}, command)
+            ? pkg.bin[command]
+            : undefined;
+      if (typeof bin !== "string") continue;
+      const entry = resolve(packageDir, bin);
+      // Do not run native executables or shell-script bins as JavaScript.
+      if (!/^#![^\r\n]*\bnode(?:\r?\n|$)/.test(readFileSync(entry, "utf8"))) continue;
+      candidates.push(entry);
+    } catch {
+      // Absent optional packages are normal; unresolved commands use spawn.
+    }
+  }
+  if (candidates.length > 1) throw new Error(`Ambiguous local Node command: ${command}`);
+  return candidates.length === 1
+    ? { command: node, args: [candidates[0], ...args] }
+    : { command, args };
+}
+
 function main(argv) {
   const [command, ...args] = argv;
   if (!command) {
@@ -111,7 +165,14 @@ function main(argv) {
     process.exit(2);
   }
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
-  const child = spawn(command, args, { stdio: "inherit", env });
+  let launch;
+  try {
+    launch = resolveCommand(command, args);
+  } catch (err) {
+    console.error(`[with-app-env] failed to run ${command}:`, err?.message || err);
+    process.exit(127);
+  }
+  const child = spawn(launch.command, launch.args, { stdio: "inherit", env });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
     process.on(signal, () => child.kill(signal));
