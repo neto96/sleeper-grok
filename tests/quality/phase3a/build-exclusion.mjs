@@ -33,7 +33,7 @@ try {
   await writeFile(path, JSON.stringify(c), { mode: 0o600 });
   for (const command of ["build", "build:dev"]) {
     const r = spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", ["run", command], {
-      env: { ...process.env, LOCAL_QUALITY_ENABLED: "1" },
+      env: { ...process.env, LOCAL_QUALITY_ENABLED: "1", FANTASYPROS_API_KEY: "BUNDLED_SECRET_CANARY_46321" },
       encoding: "utf8",
       maxBuffer: 20_000_000,
     });
@@ -45,30 +45,27 @@ try {
     assert.equal(r.status, 0, `${command} failed; inspect local log`);
     const files = await walk(".vercel/output");
     assert.ok(files.length > 10);
+    let combined = "";
     for (const f of files) {
       const data = await readFile(f);
+      combined += data.toString();
       for (const marker of [
         sentinel,
+        "BUNDLED_SECRET_CANARY_46321",
         "PHASE3B_RAW_PRIVATE_CANARY_63819",
         "quality-import-ecr",
         "Expected current calendar season",
         "/__local-quality",
-        "Best ROS Assets",
-        "Best measured lineup change",
-        "ROS: no current matched rank",
-        "ROS position filter",
-        "ROS coverage is partial",
-        "ROS leader is questionable",
-        "Manually supplied local research capture.",
-        "shadow-quality-v1",
       ])
         assert.ok(
           !data.includes(Buffer.from(marker)),
           `${f} contains development marker ${marker}`,
         );
     }
+    for (const marker of ["Best ROS Assets", "Fixed Week 11 capture", "2026-11-17", "Jahmyr Gibbs"])
+      assert.ok(combined.includes(marker), `Missing bundled ROS production marker ${marker}`);
     console.log(
-      `PASS ${command}: ${files.length} built files exclude private data, local endpoint and quality module`,
+      `PASS ${command}: ${files.length} built files include approved bundled ROS; exclude private local data and endpoint`,
     );
   }
 } finally {

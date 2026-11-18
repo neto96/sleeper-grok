@@ -1,4 +1,4 @@
-/** Local development only. No provider I/O or production decision consumers. */
+/** Shared reference-evidence adapter. No provider I/O or decision consumers. */
 import { z } from "zod";
 import {
   evaluatePlayerQuality,

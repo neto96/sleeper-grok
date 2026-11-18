@@ -11,9 +11,7 @@ import { cn } from "@/lib/utils";
 
 import { needLabel, scarcityLabel } from "@/lib/sleeper/presentation";
 
-const LocalRosAssets = import.meta.env.LOCAL_QUALITY_ENABLED
-  ? lazy(() => import("./local-ros-assets"))
-  : null;
+const WaiverRosAssets = lazy(() => import("./waiver-ros-assets"));
 
 const OFFENSE = ["QB", "RB", "WR", "TE"] as const;
 
@@ -303,7 +301,7 @@ export function WaiverPanel({ snapshot, onComparison, disabled=false }: { snapsh
       </div>
     </div>
   );
-  return !disabled && LocalRosAssets
-    ? <Suspense fallback={render()}><LocalRosAssets snapshot={snapshot} projected={projected}>{render}</LocalRosAssets></Suspense>
+  return !disabled
+    ? <Suspense fallback={render()}><WaiverRosAssets snapshot={snapshot} projected={projected}>{render}</WaiverRosAssets></Suspense>
     : render();
 }

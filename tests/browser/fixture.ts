@@ -1,3 +1,4 @@
+import { bundledCapture } from "../../src/lib/ros-quality/bundled";
 import { buildAnalysisBundle, buildMarkdown } from "../../src/lib/sleeper/format";
 import { DEFAULT_LEAGUE_ID, DEFAULT_MY_ROSTER_ID } from "../../src/lib/sleeper/constants";
 import type { LeagueSnapshot, PlayerSlot, TeamRoster } from "../../src/lib/sleeper/types";
@@ -57,6 +58,19 @@ export function makeProjectionSnapshot(): LeagueSnapshot {
 export function makeLocalQualitySnapshot() {
   const s = makeProjectionSnapshot();
   s.analysisWaiverPool = Array.from({length:30},(_,i)=>({player_id:`local-${i}`,name:`Research Option ${i}`,position:i%2?'RB':'WR',team:'TST',status:'Active',injury_status:null}));
+  s.actionableWaiverAnalysis = {available:true,candidates:s.analysisWaiverPool.slice(0,3)};
+  return s;
+}
+
+/** Reference-ranking UI scenario only; fictional league and Sleeper identities. */
+export function makeBundledQualitySnapshot(refreshed = false) {
+  const s = makeProjectionSnapshot();
+  s.week = 11; s.displayWeek = 11;
+  s.fetchedAt = refreshed ? "2026-11-18T13:00:00Z" : "2026-11-18T12:00:00Z";
+  s.analysisWaiverPool = bundledCapture.records.slice(refreshed ? 1 : 0, 30).map((r, i) => ({
+    player_id: `bundled-test-${i}`, name: r.evidence.player.name, position: r.evidence.player.position,
+    team: r.team, status: "Active", injury_status: null,
+  }));
   s.actionableWaiverAnalysis = {available:true,candidates:s.analysisWaiverPool.slice(0,3)};
   return s;
 }
