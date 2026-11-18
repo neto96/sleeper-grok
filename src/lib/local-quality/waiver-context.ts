@@ -3,6 +3,8 @@ import type { rosAssets } from "./model.ts";
 import type { LeagueSnapshot } from "../sleeper/types.ts";
 import type { ProjectedWaivers } from "../sleeper/waiver-valuation.ts";
 import { assessAvailability } from "../sleeper/analysis/availability.ts";
+import { priorityByeStatus } from "../sleeper/priority-candidates.ts";
+import type { AnalysisRecord } from "../sleeper/analysis/engine.ts";
 export type RosView = ReturnType<typeof rosAssets>;
 export const ROS_POSITIONS = ["All", "RB", "WR", "TE", "QB"] as const;
 export type RosPosition = (typeof ROS_POSITIONS)[number];
@@ -22,6 +24,14 @@ export function availabilityLabel(snapshot: LeagueSnapshot, id: string): string 
   const a = assessAvailability(raw);
   if (a.availability === "unavailable") return "Currently unavailable";
   if (a.availability === "uncertain") return "Questionable";
+  if (
+    priorityByeStatus(
+      raw,
+      snapshot.week,
+      (snapshot.fantasyAnalysis.priority_bye_schedule ?? {}) as AnalysisRecord,
+    ) === "on_bye"
+  )
+    return `Bye Week ${snapshot.week}`;
   return null;
 }
 export function decisionContext(
@@ -67,7 +77,11 @@ export function decisionContext(
       id: model.player_id,
       name: model.name,
       label: "Current waiver model",
-      detail: "",
+      detail:
+        ["QB", "RB", "WR", "TE"].includes(String(model.position)) &&
+        ["high", "critical"].includes(String(model.team_need))
+          ? `${model.position} need`
+          : "",
     });
   const incompleteRos = view.rows.length < view.available;
   const incompleteProjection =
@@ -83,15 +97,15 @@ export function decisionContext(
   const lines: string[] = [];
   if (canCollapse && sources.length === 3 && new Set(sources.map((s) => s.id)).size === 1) {
     lines.push(
-      `All three views agree: ${sources[0].name} · ${sources[0].detail} · ${sources[1].detail}`,
+      `All three views agree: ${sources[0].name} · ${sources[0].detail} · ${sources[1].detail}${sources[2].detail ? ` · ${sources[2].detail}` : ""}`,
     );
   } else {
     const labels = ["ROS", "projected", "waiver model"];
     const used = new Set<string>();
     for (const s of sources) {
       if (used.has(s.id)) continue;
-      const group = canCollapse ? sources.filter((x) => x.id === s.id) : [s];
-      if (canCollapse) used.add(s.id);
+      const group = sources.filter((x) => x.id === s.id);
+      used.add(s.id);
       const label =
         group.length > 1
           ? group
@@ -105,7 +119,7 @@ export function decisionContext(
                         : 2
                   ],
               )
-              .join(" + ") + " leader"
+              .join(" + ") + (canCollapse ? " leader" : " listed choice")
           : s.label;
       lines.push(
         `${label}: ${s.name}${group
@@ -117,13 +131,28 @@ export function decisionContext(
     }
   }
   const notes: string[] = [];
-  if (ros && availabilityLabel(snapshot, ros.id) === "Currently unavailable")
+  const availability = ros ? availabilityLabel(snapshot, ros.id) : null;
+  // One factual explanation; observed rankings do not establish why a model chose a player.
+  if (availability === "Currently unavailable")
     notes.push("ROS leader is currently unavailable; ROS order is unchanged.");
-  if (ros && gain && ros.id !== gain.playerId)
+  else if (availability === "Questionable")
+    notes.push("ROS leader is questionable; ROS order is unchanged.");
+  else if (availability?.startsWith("Bye Week"))
+    notes.push(`ROS leader is on bye in Week ${snapshot.week}; ROS order is unchanged.`);
+  else if (ros && gain && ros.id !== gain.playerId)
     notes.push("ROS asset strength and projected lineup change favor different players.");
+  else if (ros && model && typeof model.player_id === "string" && ros.id !== model.player_id)
+    notes.push("ROS and current waiver-model rankings favor different players.");
+  else if (
+    gain &&
+    model &&
+    typeof model.player_id === "string" &&
+    gain.playerId !== model.player_id
+  )
+    notes.push("Projected lineup change and the current waiver model favor different players.");
   if (incompleteRos)
-    notes.push("ROS evidence is incomplete; missing or unmatched ranks are unknown.");
-  if (projected.status === "ready" && incompleteProjection)
+    notes.push("ROS coverage is partial; unranked or unmatched players remain unknown.");
+  if (gain && incompleteProjection)
     notes.push("Projected leader is among measured candidates only.");
   if (tied)
     notes.push("A leading rank, lineup change or waiver score is tied; no unique consensus.");

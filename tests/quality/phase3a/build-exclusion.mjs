@@ -57,6 +57,8 @@ try {
         "Best measured lineup change",
         "ROS: no current matched rank",
         "ROS position filter",
+        "ROS coverage is partial",
+        "ROS leader is questionable",
         "Manually supplied local research capture.",
         "shadow-quality-v1",
       ])

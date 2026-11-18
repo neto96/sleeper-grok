@@ -84,7 +84,7 @@ test("annotations follow candidate IDs without ordering and do not label unknown
   );
   assert.deepEqual(ids, ["p2", "absent", "p0"]);
 });
-test("complete agreement collapses, partial agreement collapses only with complete evidence", () => {
+test("complete agreement collapses, partial agreement is grouped without asserting consensus", () => {
   const v = view(),
     s = snapshot();
   assert.match(decisionContext(v, s, projection()).lines[0], /All three views agree/);
@@ -92,8 +92,9 @@ test("complete agreement collapses, partial agreement collapses only with comple
   assert.match(decisionContext(v, s, projection()).lines[0], /ROS \+ projected leader/);
   v.available++;
   const result = decisionContext(v, s, projection());
-  assert.equal(result.lines.length, 3);
-  assert.ok(result.notes.some((n) => n.includes("incomplete")));
+  assert.equal(result.lines.length, 2);
+  assert.ok(result.lines[0].includes("listed choice"));
+  assert.ok(result.notes.some((n) => n.includes("partial")));
 });
 test("disagreement preserves units; unavailability does not penalize rank", () => {
   const s = snapshot(),
@@ -102,7 +103,7 @@ test("disagreement preserves units; unavailability does not penalize rank", () =
   const r = decisionContext(v, s, projection("p1", -0.5));
   assert.ok(r.lines.some((l) => l.includes("-0.50 pts/week")));
   assert.ok(r.notes.some((n) => n.includes("currently unavailable")));
-  assert.ok(r.notes.some((n) => n.includes("different players")));
+  assert.equal(r.notes.filter((n) => n.includes("ROS leader")).length, 1);
   assert.equal(availabilityLabel(s, "p0"), "Currently unavailable");
   assert.equal(v.rows[0].id, "p0");
 });
@@ -112,7 +113,7 @@ test("missing ROS/projections are omitted; incomplete and tied evidence cannot c
     decisionContext(view(0), s, { ...projection(), status: "unavailable" }).lines.length,
     1,
   );
-  assert.equal(decisionContext(view(), s, projection("p0", null)).lines.length, 2);
+  assert.equal(decisionContext(view(), s, projection("p0", null)).lines.length, 1);
   const v = view();
   v.rows[1].rank = 1;
   assert.ok(!decisionContext(v, s, projection()).lines.some((l) => l.includes("agree")));

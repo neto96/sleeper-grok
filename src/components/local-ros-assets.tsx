@@ -158,7 +158,7 @@ export default function LocalRosAssets({
             {visible.rows.map((p) => (
               <li key={p.id} className="flex flex-wrap justify-between gap-2 py-3 text-sm">
                 <span>
-                  {p.name}{" "}
+                  <span className="font-medium">{p.name}</span>{" "}
                   <span className="text-muted-foreground">
                     · {p.position} · {p.team ?? "FA"}
                     {availabilityLabel(snapshot, p.id)
@@ -166,7 +166,7 @@ export default function LocalRosAssets({
                       : ""}
                   </span>
                 </span>
-                <span>
+                <span className="text-xs text-muted-foreground">
                   ROS #{p.rank}
                   {p.positionalRank !== null
                     ? ` · ${p.position}${p.positionalRank} (same pool)`
